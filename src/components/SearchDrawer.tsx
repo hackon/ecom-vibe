@@ -93,7 +93,7 @@ export default function SearchDrawer({
               </div>
 
               <div className={styles.grid}>
-                {results.slice(0, 6).map((product) => (
+                {results.slice(0, 20).map((product) => (
                   <Link
                     key={product.id}
                     href={`/product/${product.id}`}

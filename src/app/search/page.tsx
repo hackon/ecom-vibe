@@ -32,6 +32,8 @@ function SearchResults() {
   const [selectedWoodType, setSelectedWoodType] = useState<string | null>(null);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const resultsPerPage = 10;
 
   useEffect(() => {
     if (!query) return;
@@ -63,9 +65,21 @@ function SearchResults() {
     setSelectedCategory(null);
     setSelectedWoodType(null);
     setSelectedPriceRange(null);
+    setCurrentPage(1);
   };
 
   const activeFilterCount = [selectedCategory, selectedWoodType, selectedPriceRange].filter(Boolean).length;
+
+  // Pagination calculations
+  const totalPages = Math.ceil(products.length / resultsPerPage);
+  const startIndex = (currentPage - 1) * resultsPerPage;
+  const endIndex = startIndex + resultsPerPage;
+  const currentProducts = products.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, selectedWoodType, selectedPriceRange, query]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -203,11 +217,75 @@ function SearchResults() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product.id} {...product} />
-                ))}
-              </div>
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {currentProducts.map((product) => (
+                    <ProductCard key={product.id} {...product} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '32px' }}>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: '8px 16px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        backgroundColor: currentPage === 1 ? '#f3f4f6' : 'white',
+                        color: currentPage === 1 ? '#9ca3af' : '#374151',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        fontWeight: '500'
+                      }}
+                    >
+                      Previous
+                    </button>
+
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          style={{
+                            padding: '8px 12px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            backgroundColor: currentPage === page ? '#f97316' : 'white',
+                            color: currentPage === page ? 'white' : '#374151',
+                            cursor: 'pointer',
+                            fontWeight: currentPage === page ? 'bold' : '500',
+                            minWidth: '40px'
+                          }}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      style={{
+                        padding: '8px 16px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        backgroundColor: currentPage === totalPages ? '#f3f4f6' : 'white',
+                        color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        fontWeight: '500'
+                      }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ textAlign: 'center', marginTop: '16px', color: '#6b7280', fontSize: '14px' }}>
+                  Showing {startIndex + 1}-{Math.min(endIndex, products.length)} of {products.length} results
+                </div>
+              </>
             )}
           </main>
         </div>

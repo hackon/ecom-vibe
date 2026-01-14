@@ -2,28 +2,31 @@
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 40;
+  z-index: 20;
 }
 
 .drawer {
   position: fixed;
-  top: 0;
+  top: 73px;
   left: 0;
   right: 0;
   background-color: white;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  z-index: 50;
-  max-height: 70vh;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 25;
+  max-height: calc(70vh - 73px);
   overflow-y: auto;
   animation: slideDown 0.3s ease-out;
+  border-top: 1px solid #e5e7eb;
 }
 
 @keyframes slideDown {
   from {
     transform: translateY(-100%);
+    opacity: 0;
   }
   to {
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
