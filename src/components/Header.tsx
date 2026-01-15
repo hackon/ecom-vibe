@@ -1,10 +1,114 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import SearchContainer from './SearchContainer';
-import { ShoppingCart } from 'lucide-react';
+import AuthDrawer from './AuthDrawer';
+import { useAuth } from '@/contexts/AuthContext';
+import { ShoppingCart, User, LogOut, ChevronDown } from 'lucide-react';
 import styles from './Header.module.css';
+
+function UserMenu() {
+  const { user, isAuthenticated, isLoading, logout, needsProfile } = useAuth();
+  const [isAuthDrawerOpen, setIsAuthDrawerOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const openLogin = () => {
+    setAuthMode('login');
+    setIsAuthDrawerOpen(true);
+  };
+
+  const openRegister = () => {
+    setAuthMode('register');
+    setIsAuthDrawerOpen(true);
+  };
+
+  const handleLogout = async () => {
+    setIsDropdownOpen(false);
+    await logout();
+  };
+
+  // Show profile completion prompt if needed
+  if (isAuthenticated && needsProfile) {
+    return (
+      <>
+        <button onClick={openRegister} className={styles.completeProfileButton}>
+          Complete Profile
+        </button>
+        <AuthDrawer
+          isOpen={isAuthDrawerOpen}
+          onClose={() => setIsAuthDrawerOpen(false)}
+          initialMode="register"
+        />
+      </>
+    );
+  }
+
+  if (isLoading) {
+    return <div className={styles.authLoading} />;
+  }
+
+  if (isAuthenticated && user) {
+    const displayName = user.profile?.type === 'private'
+      ? user.profile.firstName
+      : user.profile?.type === 'professional'
+        ? user.profile.orgName
+        : user.email.split('@')[0];
+
+    return (
+      <div className={styles.userMenuWrapper}>
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className={styles.userButton}
+        >
+          <User size={18} />
+          <span className={styles.userName}>{displayName}</span>
+          <ChevronDown size={14} className={isDropdownOpen ? styles.chevronOpen : ''} />
+        </button>
+
+        {isDropdownOpen && (
+          <>
+            <div className={styles.dropdownOverlay} onClick={() => setIsDropdownOpen(false)} />
+            <div className={styles.dropdown}>
+              <div className={styles.dropdownHeader}>
+                <p className={styles.dropdownEmail}>{user.email}</p>
+                <p className={styles.dropdownType}>
+                  {user.customerType === 'private' && 'Private Customer'}
+                  {user.customerType === 'professional' && 'Business Customer'}
+                  {user.customerType === 'employee' && 'Employee'}
+                </p>
+              </div>
+              <div className={styles.dropdownDivider} />
+              <button onClick={handleLogout} className={styles.dropdownItem}>
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className={styles.authButtons}>
+        <button onClick={openLogin} className={styles.loginButton}>
+          Sign In
+        </button>
+        <button onClick={openRegister} className={styles.registerButton}>
+          Register
+        </button>
+      </div>
+      <AuthDrawer
+        isOpen={isAuthDrawerOpen}
+        onClose={() => setIsAuthDrawerOpen(false)}
+        initialMode={authMode}
+      />
+    </>
+  );
+}
 
 const Header = () => {
   return (
@@ -20,11 +124,14 @@ const Header = () => {
           </Suspense>
         </div>
 
-        <Link href="/cart" className={styles.cartLink}>
-          <ShoppingCart size={20} />
-          <span className={styles.cartText}>Cart</span>
-          <span className={styles.cartBadge}>0</span>
-        </Link>
+        <div className={styles.rightSection}>
+          <UserMenu />
+          <Link href="/cart" className={styles.cartLink}>
+            <ShoppingCart size={20} />
+            <span className={styles.cartText}>Cart</span>
+            <span className={styles.cartBadge}>0</span>
+          </Link>
+        </div>
       </div>
     </header>
   );

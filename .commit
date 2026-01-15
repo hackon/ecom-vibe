@@ -1,26 +1,29 @@
-feat: implement CMS-driven landing page with carousels and hero banner
+feat: implement JWT-based authentication with multi-step registration
 
-API Layer (following Frontend -> B4F -> Backend -> 3rdparty flow):
-- Add /api/3rdparty/cms/pages - home page layout with blocks
-- Add /api/3rdparty/cms/article/[slug] - article content
-- Add /api/3rdparty/cms/content/[slug] - generic content blocks (mocked)
-- Add /api/3rdparty/cms/store/[storeId] - store config (mocked)
-- Add /api/backend/v1/pages - wraps 3rdparty cms/pages
-- Add /api/backend/v1/article/[slug] - wraps 3rdparty cms/article
-- Update /api/b4f to serve home page layout
-- Add /api/b4f/article/[slug] for article content
+3rdparty Auth Mock (/api/3rdparty/auth):
+- JWT-like token generation with access/refresh tokens
+- User storage with seeded demo accounts
+- Customer types: Private, Professional, Employee
+- Actions: login, register, complete-profile, refresh, logout, me
 
-CMS Mock Data:
-- Home layout with carousel and hero-banner block types
-- "Best January Deals" carousel (10 products, 4 visible)
-- Free Shipping hero banner linking to article
-- "Power Drill Offers" carousel (7 products, 4 visible)
-- Two sample articles (free shipping policy, woodworking guide)
+Backend Auth API (/api/backend/v1/auth/*):
+- /login - authenticate with email/password
+- /register - create account (step 1)
+- /complete-profile - save customer profile (step 2)
+- /refresh - get new access token
+- /logout - invalidate session
+- /me - get current user
 
-Components:
-- ProductCarousel: horizontal scrolling product cards with navigation
-- HeroBanner: promotional banner with link to article
-
-Pages:
-- Landing page fetches layout from B4F and renders blocks dynamically
-- Article page at /article/[slug] with markdown-like content rendering
+Frontend:
+- AuthContext with login, register, completeProfile, logout, refreshAuth
+- Token storage in localStorage with automatic refresh
+- AuthDrawer component with slide-in panel
+- Login form with demo credentials display
+- Register form with password validation
+- Multi-step profile form:
+  - Private: firstName, lastName, address, phone
+  - Professional: orgId, orgName, contactPerson, address, phone
+  - Employee: employeeEmail, department
+- Header with Sign In/Register buttons
+- User dropdown menu when authenticated
+- Profile completion prompt for new users

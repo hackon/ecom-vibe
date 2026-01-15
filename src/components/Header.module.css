@@ -72,3 +72,195 @@
   border-radius: 9999px;
   padding: 2px 8px;
 }
+
+/* Right section */
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Auth buttons */
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loginButton {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.loginButton:hover {
+  color: #d97706;
+  background: #fef3c7;
+}
+
+.registerButton {
+  padding: 8px 16px;
+  background: #d97706;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.registerButton:hover {
+  background: #b45309;
+}
+
+.completeProfileButton {
+  padding: 8px 16px;
+  background: #fef3c7;
+  border: 1px solid #d97706;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.completeProfileButton:hover {
+  background: #fde68a;
+}
+
+.authLoading {
+  width: 100px;
+  height: 36px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* User menu */
+.userMenuWrapper {
+  position: relative;
+}
+
+.userButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #374151;
+}
+
+.userButton:hover {
+  border-color: #d1d5db;
+  background: #f3f4f6;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdownOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.dropdownHeader {
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.dropdownEmail {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownType {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.dropdownItem:hover {
+  background: #f3f4f6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .authButtons {
+    gap: 4px;
+  }
+
+  .loginButton,
+  .registerButton {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .userName {
+    display: none;
+  }
+}
