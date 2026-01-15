@@ -1,5 +1,26 @@
-fix: extract product data from 3rdparty PIM wrapper in backend API
+feat: implement CMS-driven landing page with carousels and hero banner
 
-- Backend /api/backend/v1/product/[productId] now extracts the product
-  from the 3rdparty response wrapper { source, product }
-- Returns just the product object to the frontend as expected
+API Layer (following Frontend -> B4F -> Backend -> 3rdparty flow):
+- Add /api/3rdparty/cms/pages - home page layout with blocks
+- Add /api/3rdparty/cms/article/[slug] - article content
+- Add /api/3rdparty/cms/content/[slug] - generic content blocks (mocked)
+- Add /api/3rdparty/cms/store/[storeId] - store config (mocked)
+- Add /api/backend/v1/pages - wraps 3rdparty cms/pages
+- Add /api/backend/v1/article/[slug] - wraps 3rdparty cms/article
+- Update /api/b4f to serve home page layout
+- Add /api/b4f/article/[slug] for article content
+
+CMS Mock Data:
+- Home layout with carousel and hero-banner block types
+- "Best January Deals" carousel (10 products, 4 visible)
+- Free Shipping hero banner linking to article
+- "Power Drill Offers" carousel (7 products, 4 visible)
+- Two sample articles (free shipping policy, woodworking guide)
+
+Components:
+- ProductCarousel: horizontal scrolling product cards with navigation
+- HeroBanner: promotional banner with link to article
+
+Pages:
+- Landing page fetches layout from B4F and renders blocks dynamically
+- Article page at /article/[slug] with markdown-like content rendering

@@ -1,43 +1,110 @@
-import React from 'react';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
+import ProductCarousel from '@/components/ProductCarousel';
+import HeroBanner from '@/components/HeroBanner';
+import styles from './page.module.css';
+
+interface CarouselBlock {
+  type: 'carousel';
+  title: string;
+  visibleCount: number;
+  productIds: string[];
+}
+
+interface HeroBannerBlock {
+  type: 'hero-banner';
+  title: string;
+  subtitle: string;
+  backgroundColor: string;
+  textColor: string;
+  link: string;
+  linkText: string;
+}
+
+type LayoutBlock = CarouselBlock | HeroBannerBlock;
+
+interface HomeLayout {
+  id: string;
+  slug: string;
+  title: string;
+  blocks: LayoutBlock[];
+}
 
 export default function Home() {
+  const [layout, setLayout] = useState<HomeLayout | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLayout = async () => {
+      try {
+        const res = await fetch('/api/b4f');
+        if (!res.ok) {
+          throw new Error('Failed to load home page');
+        }
+        const data = await res.json();
+        setLayout(data);
+      } catch (err) {
+        console.error('Failed to fetch home layout:', err);
+        setError('Failed to load page content');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLayout();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        <Loader2 className={styles.spinner} size={48} />
+      </div>
+    );
+  }
+
+  if (error || !layout) {
+    return (
+      <div className={styles.error}>
+        <h1>Something went wrong</h1>
+        <p>{error || 'Unable to load page content'}</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <section style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Welcome to Buildy McBuild</h1>
-        <p style={{ fontSize: '1.25rem', color: '#666' }}>
-          Your one-stop shop for premium carpentry and woodworking supplies.
-        </p>
-      </section>
-
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-        <div style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '8px' }}>
-          <h2>Hardwoods</h2>
-          <p>Oak, Walnut, Cherry, and more premium cuts for your finest projects.</p>
-          <button style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Browse Wood
-          </button>
-        </div>
-        <div style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '8px' }}>
-          <h2>Precision Tools</h2>
-          <p>Chisels, planes, and saws from the world&apos;s most trusted brands.</p>
-          <button style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            View Tools
-          </button>
-        </div>
-        <div style={{ border: '1px solid #ddd', padding: '1.5rem', borderRadius: '8px' }}>
-          <h2>Hardware</h2>
-          <p>Hinges, pulls, and finishes to give your work the perfect final touch.</p>
-          <button style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Shop Hardware
-          </button>
-        </div>
-      </section>
-
-      <section style={{ marginTop: '4rem', padding: '2rem', backgroundColor: '#f9f9f9', borderRadius: '8px', textAlign: 'center' }}>
-        <h2>Start Your Next Project Today</h2>
-        <p>Quality materials for craftsmen who care about their work.</p>
-      </section>
+    <div className={styles.container}>
+      <div className={styles.content}>
+        {layout.blocks.map((block, index) => {
+          switch (block.type) {
+            case 'carousel':
+              return (
+                <ProductCarousel
+                  key={`carousel-${index}`}
+                  title={block.title}
+                  productIds={block.productIds}
+                  visibleCount={block.visibleCount}
+                />
+              );
+            case 'hero-banner':
+              return (
+                <HeroBanner
+                  key={`hero-${index}`}
+                  title={block.title}
+                  subtitle={block.subtitle}
+                  backgroundColor={block.backgroundColor}
+                  textColor={block.textColor}
+                  link={block.link}
+                  linkText={block.linkText}
+                />
+              );
+            default:
+              return null;
+          }
+        })}
+      </div>
     </div>
   );
 }

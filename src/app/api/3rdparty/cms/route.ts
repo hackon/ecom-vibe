@@ -1,7 +1,45 @@
 import { NextResponse } from 'next/server';
-import { getCMSData, createPage, updatePage } from '@/lib/cms/mockCms';
+import { getCMSData, createPage, updatePage, getHomeLayout, getArticleBySlug, getAllArticles } from '@/lib/cms/mockCms';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get('type');
+  const slug = searchParams.get('slug');
+
+  // Get home layout
+  if (type === 'home') {
+    const layout = await getHomeLayout();
+    if (!layout) {
+      return NextResponse.json({ error: 'Home layout not found' }, { status: 404 });
+    }
+    return NextResponse.json({
+      source: '3rdparty-cms',
+      layout
+    });
+  }
+
+  // Get article by slug
+  if (type === 'article' && slug) {
+    const article = await getArticleBySlug(slug);
+    if (!article) {
+      return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+    }
+    return NextResponse.json({
+      source: '3rdparty-cms',
+      article
+    });
+  }
+
+  // Get all articles
+  if (type === 'articles') {
+    const articles = await getAllArticles();
+    return NextResponse.json({
+      source: '3rdparty-cms',
+      articles
+    });
+  }
+
+  // Default: return all CMS data
   const data = await getCMSData();
   return NextResponse.json({
     source: '3rdparty-cms',
