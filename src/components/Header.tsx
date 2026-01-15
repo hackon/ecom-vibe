@@ -5,7 +5,7 @@ import Link from 'next/link';
 import SearchContainer from './SearchContainer';
 import AuthDrawer from './AuthDrawer';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShoppingCart, User, LogOut, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, LogOut, ChevronDown, Settings } from 'lucide-react';
 import styles from './Header.module.css';
 
 function UserMenu() {
@@ -80,6 +80,18 @@ function UserMenu() {
                 </p>
               </div>
               <div className={styles.dropdownDivider} />
+              {(user.customerType === 'private' || user.customerType === 'professional') && (
+                <Link href="/profile" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
+                  <User size={16} />
+                  Profile
+                </Link>
+              )}
+              {user.customerType === 'employee' && (
+                <Link href="/admin" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
+                  <Settings size={16} />
+                  Admin
+                </Link>
+              )}
               <button onClick={handleLogout} className={styles.dropdownItem}>
                 <LogOut size={16} />
                 Sign Out
