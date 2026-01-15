@@ -1,6 +1,6 @@
 // Product data generator for 1000 realistic carpentry products
 
-interface ProductAttributes {
+export interface ProductAttributes {
   woodType?: string;
   finish?: string;
   dimensions?: string;

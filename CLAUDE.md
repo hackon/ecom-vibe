@@ -55,9 +55,12 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 - `crm/mockCrm.ts` - Sample customers and organizations
 - `erp/mockErp.ts` - Inventory, orders, facilities, pricing rules
 
-### Solr Configuration (`/solr/`)
-- `configsets/products/conf/managed-schema` - Product schema with facet fields
-- `configsets/products/conf/solrconfig.xml` - Search handlers and analyzers
+### 3rd Party Configurations (`/3rdParty/`)
+- `solr/configsets/products/conf/schema.xml` - Product schema with facet fields
+- `solr/configsets/products/conf/solrconfig.xml` - Search handlers and analyzers
+- `odoo/addons/` - Custom Odoo addons
+- `odoo/config/` - Odoo configuration files
+- `odoo/sessions/` - Odoo session data
 
 ## Current Implementation
 
