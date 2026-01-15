@@ -1,8 +1,7 @@
-refactor: use sidebar navigation for admin views instead of tabs
+refactor: simplify PIM to use only Odoo backend
 
-- Move Customers and Products navigation to the existing sidebar menu
-- Add Products nav item with Package icon to admin sidebar
-- Use URL query params (?view=customers/products) for view switching
-- Highlight active nav item based on current view
-- Remove inline tabs from admin page content
-- Wrap useSearchParams in Suspense boundaries for SSR compatibility
+- Remove mock PIM and all references to it
+- Use getProductsByIds for all ID-based lookups (single ID is list of 1)
+- Remove USE_ODOO_PIM environment variable toggle
+- Remove POST/PUT endpoints that only worked with mock PIM
+- Simplify API: id, ids, skus params for product lookup
