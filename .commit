@@ -1,10 +1,6 @@
-feat: enhance product page with collapsible attribute sections
+feat: centralize product data in static JSON file
 
-- Add collapsible sections for product attributes by category
-- Display Wood Specifications for wood products (wood type, grade, finish, dimensions)
-- Display Tool Specifications for tools (type, brand, material, power, etc.)
-- Display Hardware Specifications for hardware (material, finish, size, pack size)
-- Add stock badge with icon and colored background
-- Add placeholder image fallback with category-based colors
-- Disable Add to Cart button when out of stock
-- Update Product interface to match generated product data structure
+- Generate 1000 products and store in src/data/products.json
+- Update mock PIM to import from static JSON instead of generating at runtime
+- Update Solr sync script to use same static JSON data
+- Ensures consistent product data between PIM API and Solr index

@@ -4,7 +4,7 @@
  * Usage: npx tsx scripts/sync-solr.ts
  */
 
-import { generatedProducts } from '../src/lib/pim/productGenerator';
+import productsData from '../src/data/products.json';
 
 const SOLR_URL = process.env.SOLR_URL || 'http://localhost:8983/solr/products';
 
@@ -30,7 +30,7 @@ interface SolrDocument {
   power?: string;
 }
 
-function productToSolrDoc(product: typeof generatedProducts[0]): SolrDocument {
+function productToSolrDoc(product: typeof productsData[0]): SolrDocument {
   return {
     id: product.id,
     sku: product.sku,
@@ -144,7 +144,7 @@ async function main() {
     }
 
     // Convert products to Solr documents
-    const solrDocs = generatedProducts.map(productToSolrDoc);
+    const solrDocs = productsData.map(productToSolrDoc);
 
     // Clear and reindex
     await clearIndex();

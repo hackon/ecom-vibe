@@ -1,8 +1,9 @@
-// Mock PIM State - Uses generated products for realistic dataset
-import { generatedProducts, Product } from './productGenerator';
+// Mock PIM State - Uses pre-generated static product data for consistency
+import productsData from '@/data/products.json';
+import type { Product } from './productGenerator';
 
 const pimData = {
-  products: generatedProducts as Product[]
+  products: productsData as Product[]
 };
 
 export async function getProducts() {
