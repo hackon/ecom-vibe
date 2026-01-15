@@ -34,6 +34,12 @@
   max-width: 48rem;
 }
 
+.searchPlaceholder {
+  height: 44px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
 .cartLink {
   display: flex;
   align-items: center;

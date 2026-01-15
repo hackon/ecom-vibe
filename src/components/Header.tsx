@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import SearchContainer from './SearchContainer';
 import { ShoppingCart } from 'lucide-react';
@@ -15,7 +15,9 @@ const Header = () => {
         </Link>
 
         <div className={styles.searchWrapper}>
-          <SearchContainer />
+          <Suspense fallback={<div className={styles.searchPlaceholder} />}>
+            <SearchContainer />
+          </Suspense>
         </div>
 
         <Link href="/cart" className={styles.cartLink}>

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  solr:
+    image: solr:9-slim
+    container_name: ecom-solr
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr_data:/var/solr
+      - ./solr/configsets/products:/opt/solr/server/solr/configsets/products
+    environment:
+      - SOLR_HEAP=512m
+    command:
+      - solr-precreate
+      - products
+      - /opt/solr/server/solr/configsets/products
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/products/admin/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  solr_data:

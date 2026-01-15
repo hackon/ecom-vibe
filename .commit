@@ -1,0 +1,10 @@
+feat: improve search page UX with editable query filter and URL sync
+
+- Fix infinite re-render flickering by memoizing URL param arrays
+- Add editable search query input in sidebar filters
+- Clear header search bar when on search page with active query
+- Show search query in active filters bar (removable)
+- Make price range filter a checkbox (deselectable)
+- Wrap SearchContainer in Suspense boundary for SSR compatibility
+- Generate placeholder images for products (placehold.co)
+- Update CLAUDE.md with commit workflow and site name

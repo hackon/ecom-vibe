@@ -8,11 +8,19 @@ interface SearchBarProps {
     onSearchChange: (query: string) => void;
     onFocus: () => void;
     onEnter: () => void;
+    value?: string;
 }
 
-export default function SearchBar({onSearchChange, onFocus, onEnter}: SearchBarProps) {
-    const [searchQuery, setSearchQuery] = useState('');
+export default function SearchBar({onSearchChange, onFocus, onEnter, value}: SearchBarProps) {
+    const [searchQuery, setSearchQuery] = useState(value ?? '');
     const expandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Sync with controlled value prop
+    useEffect(() => {
+        if (value !== undefined) {
+            setSearchQuery(value);
+        }
+    }, [value]);
 
 
     useEffect(() => {

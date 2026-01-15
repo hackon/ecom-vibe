@@ -9,6 +9,11 @@
 - **Package Manager**: npm
 - **Icons**: lucide-react
 - **Styling**: CSS Modules
+- **Search**: Apache Solr 9.4 (Docker)
+
+### Commit logic
+For each prompt create a summary in a temporary file called .commit.
+When asked to make commit, use this file to create the header and the contents of the commit message.
 
 ## Architecture
 
@@ -19,7 +24,8 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 
 ### Layer Responsibilities
 1. **`/api/3rdparty/`** - Mock 3rd party systems with realistic delays (40-200ms)
-   - `pim/` - Product Information Management (products, categories, search)
+   - `pim/` - Product Information Management (products, categories)
+   - `search/` - Search service (queries Solr, returns faceted results)
    - `cms/` - Content Management System (pages, assets)
    - `auth/` - Authentication (login, sessions, JWT tokens)
    - `crm/` - Customer Relationship Management (customers, contacts, activities)
@@ -41,11 +47,16 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
    - All data fetching goes through `/api/backend/v1/`
 
 ### Mock Data (`/src/lib/`)
-- `pim/mockPim.ts` - 20 products across 3 categories (Wood, Tools, Hardware)
+- `pim/productGenerator.ts` - Generates 1000 products across 3 categories (Wood, Tools, Hardware)
+- `pim/mockPim.ts` - PIM interface using generated products
 - `cms/mockCms.ts` - Landing page content, hero sections
 - `auth/mockAuth.ts` - User sessions (admin/password)
 - `crm/mockCrm.ts` - Sample customers and organizations
 - `erp/mockErp.ts` - Inventory, orders, facilities, pricing rules
+
+### Solr Configuration (`/solr/`)
+- `configsets/products/conf/managed-schema` - Product schema with facet fields
+- `configsets/products/conf/solrconfig.xml` - Search handlers and analyzers
 
 ## Current Implementation
 
@@ -84,3 +95,24 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run lint` - Run ESLint
+- `npm run solr:sync` - Sync products to Solr
+
+## Docker Setup
+
+### Starting Solr
+```bash
+docker-compose up -d
+```
+
+### Syncing Products
+After Solr is running, sync the product data:
+```bash
+npm run solr:sync
+```
+
+### Solr Admin UI
+- URL: http://localhost:8983/solr/#/products/query
+- Test queries directly in the Solr admin interface
+
+### Environment Variables
+- `SOLR_URL` - Solr base URL (default: `http://localhost:8983/solr/products`)

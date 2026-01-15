@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import SearchBar from './SearchBar';
 import SearchDrawer from './SearchDrawer';
 
@@ -9,8 +9,15 @@ export default function SearchContainer() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Check if we're on the search page with a query
+  const isOnSearchPage = pathname === '/search';
+  const pageQuery = searchParams.get('q');
+  const hasSearchQuery = isOnSearchPage && pageQuery;
 
   useEffect(() => {
     return () => {
@@ -19,6 +26,14 @@ export default function SearchContainer() {
       }
     };
   }, []);
+
+  // Clear the search bar when navigating to search page with a query
+  useEffect(() => {
+    if (hasSearchQuery) {
+      setSearchQuery('');
+      setDebouncedQuery('');
+    }
+  }, [hasSearchQuery]);
 
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
@@ -61,6 +76,7 @@ export default function SearchContainer() {
         onSearchChange={handleSearchChange}
         onFocus={handleFocus}
         onEnter={handleEnter}
+        value={searchQuery}
       />
       <SearchDrawer
         isOpen={isDrawerOpen}
