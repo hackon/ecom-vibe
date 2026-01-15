@@ -14,6 +14,7 @@
 ### Commit logic
 For each prompt create a summary in a temporary file called .commit.
 When asked to make commit, use this file to create the header and the contents of the commit message.
+And always push the commit.
 
 ## Architecture
 

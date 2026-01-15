@@ -151,6 +151,13 @@
   font-weight: 400;
 }
 
+.priceCurrency {
+  color: #6b7280;
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
 .description {
   color: #374151;
   margin-bottom: 24px;
@@ -158,19 +165,83 @@
   font-size: 14px;
 }
 
-.attribute {
-  margin-bottom: 16px;
-  font-size: 14px;
+/* Collapsible Sections */
+.attributeSections {
+  margin-top: 24px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 24px;
 }
 
-.attributeLabel {
+.collapsibleSection {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.collapsibleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: #f9fafb;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.collapsibleHeader:hover {
+  background: #f3f4f6;
+}
+
+.collapsibleTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
   font-weight: 600;
   color: #111827;
 }
 
+.collapsibleIcon {
+  color: #6b7280;
+}
+
+.collapsibleContent {
+  padding: 16px;
+  background: white;
+}
+
+/* Attribute List */
+.attributeList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 0;
+}
+
+.attributeRow {
+  display: flex;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+}
+
+.attributeRow:last-child {
+  border-bottom: none;
+}
+
+.attributeLabel {
+  font-weight: 500;
+  color: #6b7280;
+  width: 40%;
+  flex-shrink: 0;
+}
+
 .attributeValue {
-  color: #374151;
-  margin-left: 8px;
+  color: #111827;
+  font-weight: 500;
 }
 
 .stock {
@@ -179,12 +250,25 @@
   font-size: 14px;
 }
 
+.stockBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
 .stockInStock {
   color: #059669;
+  background-color: #ecfdf5;
 }
 
 .stockOutOfStock {
   color: #dc2626;
+  background-color: #fef2f2;
 }
 
 /* Quantity Selector */
@@ -260,8 +344,13 @@
   transition: background-color 0.2s;
 }
 
-.addToCartButton:hover {
+.addToCartButton:hover:not(:disabled) {
   background-color: #b45309;
+}
+
+.addToCartButton:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
 }
 
 .wishlistButton {

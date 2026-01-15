@@ -1,10 +1,10 @@
-feat: improve search page UX with editable query filter and URL sync
+feat: enhance product page with collapsible attribute sections
 
-- Fix infinite re-render flickering by memoizing URL param arrays
-- Add editable search query input in sidebar filters
-- Clear header search bar when on search page with active query
-- Show search query in active filters bar (removable)
-- Make price range filter a checkbox (deselectable)
-- Wrap SearchContainer in Suspense boundary for SSR compatibility
-- Generate placeholder images for products (placehold.co)
-- Update CLAUDE.md with commit workflow and site name
+- Add collapsible sections for product attributes by category
+- Display Wood Specifications for wood products (wood type, grade, finish, dimensions)
+- Display Tool Specifications for tools (type, brand, material, power, etc.)
+- Display Hardware Specifications for hardware (material, finish, size, pack size)
+- Add stock badge with icon and colored background
+- Add placeholder image fallback with category-based colors
+- Disable Add to Cart button when out of stock
+- Update Product interface to match generated product data structure
