@@ -111,6 +111,38 @@ export async function getProductBySku(sku: string): Promise<Product | null> {
   return convertFromOdoo(product, categoryMap);
 }
 
+export async function getProductsByIds(ids: string[]): Promise<Product[]> {
+  const categoryMap = await getCategoryMap();
+
+  // Convert all IDs to Odoo IDs
+  const odooIds: number[] = [];
+  for (const id of ids) {
+    let odooId: number;
+    if (id.startsWith('odoo-')) {
+      odooId = parseInt(id.replace('odoo-', ''), 10);
+    } else {
+      odooId = parseInt(id, 10);
+    }
+    if (!isNaN(odooId)) {
+      odooIds.push(odooId);
+    }
+  }
+
+  if (odooIds.length === 0) return [];
+
+  const odooProducts = await client.getProducts([['id', 'in', odooIds]]);
+  return odooProducts.map(p => convertFromOdoo(p, categoryMap));
+}
+
+export async function getProductsBySku(skus: string[]): Promise<Product[]> {
+  const categoryMap = await getCategoryMap();
+
+  if (skus.length === 0) return [];
+
+  const odooProducts = await client.getProducts([['default_code', 'in', skus]]);
+  return odooProducts.map(p => convertFromOdoo(p, categoryMap));
+}
+
 export async function searchProducts(
   query: string,
   options: { category?: string; offset?: number; limit?: number } = {}

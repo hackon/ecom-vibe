@@ -109,7 +109,7 @@ export default function ProductPage() {
       setLoading(true);
       setImageError(false);
       try {
-        const res = await fetch(`/api/backend/v1/product/${productId}`);
+        const res = await fetch(`/api/backend/v1/products/${productId}`);
         if (!res.ok) throw new Error('Product not found');
         const data = await res.json();
         setProduct(data);

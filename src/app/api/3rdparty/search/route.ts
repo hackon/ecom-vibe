@@ -112,9 +112,30 @@ export async function GET(request: Request) {
   // Build Solr query parameters
   const solrParams = new URLSearchParams();
 
-  // Query
+  // Check for ID or SKU-based lookup (for batch product fetching)
+  const ids = searchParams.get('ids');
+  const skus = searchParams.get('skus');
   const q = searchParams.get('q');
-  if (q && q.trim()) {
+
+  if (ids) {
+    const idList = ids.split(',').map(s => s.trim()).filter(Boolean);
+    if (idList.length > 0) {
+      const idQuery = idList.map(id => `"${id}"`).join(' OR ');
+      solrParams.set('q', `id:(${idQuery})`);
+      solrParams.set('rows', String(idList.length));
+    } else {
+      solrParams.set('q', '*:*');
+    }
+  } else if (skus) {
+    const skuList = skus.split(',').map(s => s.trim()).filter(Boolean);
+    if (skuList.length > 0) {
+      const skuQuery = skuList.map(sku => `"${sku}"`).join(' OR ');
+      solrParams.set('q', `sku:(${skuQuery})`);
+      solrParams.set('rows', String(skuList.length));
+    } else {
+      solrParams.set('q', '*:*');
+    }
+  } else if (q && q.trim()) {
     // Use edismax for better relevance
     solrParams.set('defType', 'edismax');
     solrParams.set('q', q);

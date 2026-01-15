@@ -36,13 +36,16 @@ export default function ProductCarousel({
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        // Fetch all products in parallel
-        const productPromises = productIds.map(id =>
-          fetch(`/api/backend/v1/product/${id}`).then(res => res.json())
-        );
-        const fetchedProducts = await Promise.all(productPromises);
-        // Filter out any failed fetches
-        setProducts(fetchedProducts.filter(p => p && !p.error));
+        // Use search API with ids parameter for batch product fetching
+        const ids = productIds.join(',');
+        const res = await fetch(`/api/backend/v1/search?ids=${encodeURIComponent(ids)}`);
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch products');
+        }
+
+        const data = await res.json();
+        setProducts(data.products || []);
       } catch (error) {
         console.error('Failed to fetch carousel products:', error);
       } finally {

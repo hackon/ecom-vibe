@@ -13,8 +13,34 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   const sku = searchParams.get('sku');
+  const ids = searchParams.get('ids');
+  const skus = searchParams.get('skus');
 
   try {
+    // Get multiple products by IDs (comma-separated)
+    if (ids && 'getProductsByIds' in pim) {
+      const idArray = ids.split(',').map(i => i.trim()).filter(Boolean);
+      const products = await pim.getProductsByIds(idArray);
+      return NextResponse.json({
+        source: '3rdparty-pim',
+        backend: USE_ODOO ? 'odoo' : 'mock',
+        products,
+        count: products.length
+      });
+    }
+
+    // Get multiple products by SKUs (comma-separated)
+    if (skus && 'getProductsBySku' in pim) {
+      const skuArray = skus.split(',').map(s => s.trim()).filter(Boolean);
+      const products = await pim.getProductsBySku(skuArray);
+      return NextResponse.json({
+        source: '3rdparty-pim',
+        backend: USE_ODOO ? 'odoo' : 'mock',
+        products,
+        count: products.length
+      });
+    }
+
     // Get product by SKU
     if (sku && 'getProductBySku' in pim) {
       const product = await (pim as typeof odooPim).getProductBySku(sku);

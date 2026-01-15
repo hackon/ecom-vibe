@@ -16,6 +16,16 @@ export async function getProductById(id: string) {
   return pimData.products.find(p => p.id === id) || null;
 }
 
+export async function getProductsByIds(ids: string[]) {
+  await new Promise(resolve => setTimeout(resolve, 60)); // Simulate delay
+  return pimData.products.filter(p => ids.includes(p.id));
+}
+
+export async function getProductsBySku(skus: string[]) {
+  await new Promise(resolve => setTimeout(resolve, 60)); // Simulate delay
+  return pimData.products.filter(p => skus.includes(p.sku));
+}
+
 export async function addProduct(product: Record<string, unknown>) {
   await new Promise(resolve => setTimeout(resolve, 150));
   const newProduct = {

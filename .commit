@@ -1,29 +1,8 @@
-feat: implement JWT-based authentication with multi-step registration
+refactor: consolidate product fetching to search API and cleanup unused endpoints
 
-3rdparty Auth Mock (/api/3rdparty/auth):
-- JWT-like token generation with access/refresh tokens
-- User storage with seeded demo accounts
-- Customer types: Private, Professional, Employee
-- Actions: login, register, complete-profile, refresh, logout, me
-
-Backend Auth API (/api/backend/v1/auth/*):
-- /login - authenticate with email/password
-- /register - create account (step 1)
-- /complete-profile - save customer profile (step 2)
-- /refresh - get new access token
-- /logout - invalidate session
-- /me - get current user
-
-Frontend:
-- AuthContext with login, register, completeProfile, logout, refreshAuth
-- Token storage in localStorage with automatic refresh
-- AuthDrawer component with slide-in panel
-- Login form with demo credentials display
-- Register form with password validation
-- Multi-step profile form:
-  - Private: firstName, lastName, address, phone
-  - Professional: orgId, orgName, contactPerson, address, phone
-  - Employee: employeeEmail, department
-- Header with Sign In/Register buttons
-- User dropdown menu when authenticated
-- Profile completion prompt for new users
+- Add ids and skus query parameters to search API for batch product fetching
+- Update ProductCarousel to use search API instead of dedicated products endpoint
+- Rename /product/[productId] to /products/[productId] for consistent plural naming
+- Remove unused backend endpoints: catalog, carts, cms, contacts, content,
+  contracts, facilities, me, orders, organizations, pricing, reference
+- Update backend route index to reflect current API structure
