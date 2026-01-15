@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Users, Package, Search } from 'lucide-react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Search } from 'lucide-react';
 import styles from './admin.module.css';
 
 interface Customer {
@@ -34,10 +35,10 @@ interface Product {
   };
 }
 
-type AdminView = 'customers' | 'products';
+function AdminContent() {
+  const searchParams = useSearchParams();
+  const activeView = searchParams.get('view') || 'customers';
 
-export default function AdminPage() {
-  const [activeView, setActiveView] = useState<AdminView>('customers');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,20 +104,19 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeView === 'customers') {
       fetchCustomers();
-    } else {
+    } else if (activeView === 'products') {
       fetchProducts();
     }
   }, [activeView, fetchCustomers, fetchProducts]);
 
-  const handleViewChange = (view: AdminView) => {
-    setActiveView(view);
-    setError(null);
-    if (view === 'products') {
+  useEffect(() => {
+    // Reset product state when switching to products view
+    if (activeView === 'products') {
       setProductPage(1);
       setProductSearch('');
       setSearchInput('');
     }
-  };
+  }, [activeView]);
 
   const handleProductSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,24 +184,7 @@ export default function AdminPage() {
   const totalPages = Math.ceil(totalProducts / productsPerPage);
 
   return (
-    <div className={styles.adminContainer}>
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeView === 'customers' ? styles.tabActive : ''}`}
-          onClick={() => handleViewChange('customers')}
-        >
-          <Users size={18} />
-          Customers
-        </button>
-        <button
-          className={`${styles.tab} ${activeView === 'products' ? styles.tabActive : ''}`}
-          onClick={() => handleViewChange('products')}
-        >
-          <Package size={18} />
-          Products
-        </button>
-      </div>
-
+    <div>
       {activeView === 'customers' ? (
         <div>
           <div className={styles.pageHeader}>
@@ -346,5 +329,13 @@ export default function AdminPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<div className={styles.loadingTable}>Loading...</div>}>
+      <AdminContent />
+    </Suspense>
   );
 }

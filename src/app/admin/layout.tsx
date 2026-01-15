@@ -1,11 +1,35 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, LayoutDashboard } from 'lucide-react';
+import { Users, Package, LayoutDashboard } from 'lucide-react';
 import styles from './admin.module.css';
+
+function AdminNav() {
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get('view') || 'customers';
+
+  return (
+    <nav className={styles.nav}>
+      <Link
+        href="/admin?view=customers"
+        className={`${styles.navItem} ${currentView === 'customers' ? styles.navItemActive : ''}`}
+      >
+        <Users size={18} />
+        <span>Customers</span>
+      </Link>
+      <Link
+        href="/admin?view=products"
+        className={`${styles.navItem} ${currentView === 'products' ? styles.navItemActive : ''}`}
+      >
+        <Package size={18} />
+        <span>Products</span>
+      </Link>
+    </nav>
+  );
+}
 
 export default function AdminLayout({
   children,
@@ -43,12 +67,9 @@ export default function AdminLayout({
           <LayoutDashboard size={24} />
           <span>Admin Panel</span>
         </div>
-        <nav className={styles.nav}>
-          <Link href="/admin" className={styles.navItem}>
-            <Users size={18} />
-            <span>Customers</span>
-          </Link>
-        </nav>
+        <Suspense fallback={<div className={styles.nav}>Loading...</div>}>
+          <AdminNav />
+        </Suspense>
       </aside>
       <main className={styles.main}>
         {children}

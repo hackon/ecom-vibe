@@ -1,8 +1,8 @@
-feat: add products management view to admin page
+refactor: use sidebar navigation for admin views instead of tabs
 
-- Add tabbed navigation to switch between Customers and Products views
-- Implement products table with SKU, category, price, and stock columns
-- Add search functionality for products with pagination
-- Add category badges (Wood, Tools, Hardware) with distinct colors
-- Add stock status indicators (in stock / out of stock)
-- Style product SKUs with monospace font
+- Move Customers and Products navigation to the existing sidebar menu
+- Add Products nav item with Package icon to admin sidebar
+- Use URL query params (?view=customers/products) for view switching
+- Highlight active nav item based on current view
+- Remove inline tabs from admin page content
+- Wrap useSearchParams in Suspense boundaries for SSR compatibility
