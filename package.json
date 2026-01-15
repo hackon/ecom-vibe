@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "solr:sync": "tsx scripts/sync-solr.ts",
-    "odoo:test": "tsx scripts/test-odoo.ts",
-    "odoo:sync": "tsx scripts/sync-odoo.ts"
+    "solr:sync": "tsx --env-file=.env scripts/sync-solr.ts",
+    "odoo:test": "tsx --env-file=.env scripts/test-odoo.ts",
+    "odoo:sync": "tsx --env-file=.env scripts/sync-odoo.ts"
   },
   "dependencies": {
     "@foxglove/xmlrpc": "^1.3.0",
