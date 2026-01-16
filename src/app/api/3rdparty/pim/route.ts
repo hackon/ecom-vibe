@@ -3,20 +3,26 @@ import * as pim from '@/lib/pim/odooPim';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
   const ids = searchParams.get('ids');
-  const skus = searchParams.get('skus');
 
   try {
-    // Get products by IDs (single id is treated as list of 1)
-    if (ids || id) {
-      const idList = ids
-        ? ids.split(',').map(i => i.trim()).filter(Boolean)
-        : [id!];
+    // Get products by IDs (comma-separated)
+    if (ids) {
+      const idList = ids.split(',').map(i => i.trim()).filter(Boolean);
+
+      if (idList.length === 0) {
+        return NextResponse.json({
+          source: '3rdparty-pim',
+          products: [],
+          count: 0
+        });
+      }
+
       const products = await pim.getProductsByIds(idList);
 
+      console.log(products)
       // For single ID request, return single product format
-      if (id && !ids) {
+      if (idList.length === 1) {
         if (products.length === 0) {
           return NextResponse.json({
             source: '3rdparty-pim',
@@ -36,18 +42,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // Get products by SKUs
-    if (skus) {
-      const skuList = skus.split(',').map(s => s.trim()).filter(Boolean);
-      const products = await pim.getProductsBySku(skuList);
-      return NextResponse.json({
-        source: '3rdparty-pim',
-        products,
-        count: products.length
-      });
-    }
-
-    // Get all products
+    // Get all products (no filter)
     const products = await pim.getProducts();
     return NextResponse.json({
       source: '3rdparty-pim',

@@ -1,8 +1,10 @@
-docs: add comprehensive user types and authentication documentation
+feat: use SKU as product ID instead of Odoo internal ID
 
-- Document 5 user types: Admin, Private, Professional, Sales Person, Employee
-- Add authentication methods (AD for internal, email/password for external)
-- Document impersonation rules for sales personnel
-- Add pricing hierarchy (contracts > projects > employee > professional > retail)
-- Include TypeScript session context interface
-- Update CLAUDE.md with current endpoint references and admin pages
+- Update sync script to use SKU (default_code) as product ID for cleaner URLs
+- Update odooPim adapter to use SKU as ID and look up products by SKU
+- Simplify getProductById and getProductsByIds to use SKU-based lookups
+- Product URLs are now /product/WD-0001 instead of /product/odoo-123
+- Create unified sync script (products.json → Odoo → Solr)
+- Remove old separate sync scripts (sync-odoo.ts, sync-solr.ts)
+- Update package.json with unified `sync` command
+- Update CLAUDE.md with new sync workflow documentation

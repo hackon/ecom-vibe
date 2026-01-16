@@ -38,9 +38,12 @@ function convertFromOdoo(odooProduct: OdooProduct, categoryMap: Map<number, stri
     }
   }
 
+  // Use SKU (default_code) as the product ID for cleaner URLs
+  const sku = odooProduct.default_code || `ODOO-${odooProduct.id}`;
+
   return {
-    id: `odoo-${odooProduct.id}`,
-    sku: odooProduct.default_code || `ODOO-${odooProduct.id}`,
+    id: sku,
+    sku: sku,
     name: odooProduct.name,
     description: odooProduct.description_sale || odooProduct.description || '',
     price: odooProduct.list_price,
@@ -69,34 +72,8 @@ export async function getProducts(options: { offset?: number; limit?: number } =
 export async function getProductById(id: string): Promise<Product | null> {
   const categoryMap = await getCategoryMap();
 
-  // Handle both odoo-prefixed IDs and raw numeric IDs
-  let odooId: number;
-  if (id.startsWith('odoo-')) {
-    odooId = parseInt(id.replace('odoo-', ''), 10);
-  } else if (id.startsWith('w') || id.startsWith('t') || id.startsWith('h')) {
-    // This is a mock PIM ID format, search by SKU pattern
-    const skuPatterns: Record<string, string> = {
-      'w': 'WD-',
-      't': 'TL-',
-      'h': 'HW-',
-    };
-    const prefix = skuPatterns[id[0]];
-    const num = id.substring(1);
-    // Search for product by SKU pattern
-    const products = await client.searchRead<OdooProduct>(
-      'product.template',
-      [['default_code', 'like', `${prefix}%${num.padStart(4, '0')}`]],
-      { limit: 1 }
-    );
-    if (products.length === 0) return null;
-    return convertFromOdoo(products[0], categoryMap);
-  } else {
-    odooId = parseInt(id, 10);
-  }
-
-  if (isNaN(odooId)) return null;
-
-  const product = await client.getProductById(odooId);
+  // ID is now SKU (default_code in Odoo)
+  const product = await client.getProductBySku(id);
   if (!product) return null;
 
   return convertFromOdoo(product, categoryMap);
@@ -114,23 +91,10 @@ export async function getProductBySku(sku: string): Promise<Product | null> {
 export async function getProductsByIds(ids: string[]): Promise<Product[]> {
   const categoryMap = await getCategoryMap();
 
-  // Convert all IDs to Odoo IDs
-  const odooIds: number[] = [];
-  for (const id of ids) {
-    let odooId: number;
-    if (id.startsWith('odoo-')) {
-      odooId = parseInt(id.replace('odoo-', ''), 10);
-    } else {
-      odooId = parseInt(id, 10);
-    }
-    if (!isNaN(odooId)) {
-      odooIds.push(odooId);
-    }
-  }
+  if (ids.length === 0) return [];
 
-  if (odooIds.length === 0) return [];
-
-  const odooProducts = await client.getProducts([['id', 'in', odooIds]]);
+  // IDs are now SKUs (default_code in Odoo)
+  const odooProducts = await client.getProducts([['default_code', 'in', ids]]);
   return odooProducts.map(p => convertFromOdoo(p, categoryMap));
 }
 

@@ -7,13 +7,27 @@ export async function GET(
   { params }: { params: Promise<{ productId: string }> }
 ) {
   const { productId } = await params;
-  const res = await fetch(`${API_BASE_URL}/api/3rdparty/pim?type=products&id=${productId}`);
-  const data = await res.json();
 
-  // Extract product from 3rdparty wrapper - backend acts as abstraction layer
-  if (data.product) {
-    return NextResponse.json(data.product, { status: res.status });
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/3rdparty/pim?ids=${productId}`);
+    const data = await res.json();
+
+    // Extract product from 3rdparty wrapper - backend acts as abstraction layer
+    if (data.product) {
+      return NextResponse.json(data.product, { status: res.status });
+    }
+
+    // Handle error responses
+    if (data.error) {
+      return NextResponse.json({ error: data.error }, { status: res.status });
+    }
+
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    console.error('Backend product fetch error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch product' },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json(data, { status: res.status });
 }

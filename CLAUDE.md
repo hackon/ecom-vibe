@@ -102,27 +102,43 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run lint` - Run ESLint
-- `npm run solr:sync` - Sync products to Solr
+- `npm run sync` - Sync products (products.json → Odoo → Solr)
+- `npm run odoo:test` - Test Odoo connection
 
 ## Docker Setup
 
-### Starting Solr
+### Starting Services
 ```bash
 docker-compose up -d
 ```
 
+This starts:
+- Solr (search engine) on port 8983
+- Odoo (PIM) on port 8069
+- PostgreSQL (Odoo database) on port 5432
+
 ### Syncing Products
-After Solr is running, sync the product data:
+After Docker services are running, sync the product data:
 ```bash
-npm run solr:sync
+npm run sync
 ```
 
-### Solr Admin UI
-- URL: http://localhost:8983/solr/#/products/query
-- Test queries directly in the Solr admin interface
+This unified sync script:
+1. Syncs products from `products.json` to Odoo
+2. Pulls products from Odoo (with Odoo-assigned IDs)
+3. Indexes products to Solr for search
+
+### Admin UIs
+- Solr: http://localhost:8983/solr/#/products/query
+- Odoo: http://localhost:8069
 
 ### Environment Variables
+See `.env.template` for required variables:
 - `SOLR_URL` - Solr base URL (default: `http://localhost:8983/solr/products`)
+- `ODOO_URL` - Odoo base URL (default: `http://localhost:8069`)
+- `ODOO_DB` - Odoo database name
+- `ODOO_USERNAME` - Odoo username
+- `ODOO_API_KEY` - Odoo API key
 
 ## User Types & Authentication
 
@@ -220,3 +236,4 @@ interface UserSession {
   contracts?: ContractReference[];
   activeProject?: ProjectReference;
 }
+```
