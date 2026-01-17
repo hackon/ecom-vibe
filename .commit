@@ -1,7 +1,8 @@
-refactor: simplify PIM to use only Odoo backend
+docs: add comprehensive user types and authentication documentation
 
-- Remove mock PIM and all references to it
-- Use getProductsByIds for all ID-based lookups (single ID is list of 1)
-- Remove USE_ODOO_PIM environment variable toggle
-- Remove POST/PUT endpoints that only worked with mock PIM
-- Simplify API: id, ids, skus params for product lookup
+- Document 5 user types: Admin, Private, Professional, Sales Person, Employee
+- Add authentication methods (AD for internal, email/password for external)
+- Document impersonation rules for sales personnel
+- Add pricing hierarchy (contracts > projects > employee > professional > retail)
+- Include TypeScript session context interface
+- Update CLAUDE.md with current endpoint references and admin pages

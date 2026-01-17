@@ -33,25 +33,23 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
    - `erp/` - Enterprise Resource Planning (inventory, orders, pricing, facilities)
 
 2. **`/api/backend/v1/`** - Backend abstraction layer (delegates to 3rdparty)
-   - `search/` - Product search with facets
-   - `product/[productId]/` - Product details
-   - `catalog/` - Categories, products, pricing, availability
+   - `search/` - Product search with facets, also supports `ids` and `skus` params for batch fetching
+   - `products/[productId]/` - Single product details
    - `customers/` - Customer management with contacts and assortments
-   - `orders/` - Order management (create, status, cancel)
-   - `carts/` - Cart operations (pricing, validation, submit)
-   - `auth/` - Login, logout, token refresh
-   - `me/` - Current user info, organizations, permissions
-   - `content/` - CMS pages, navigation, banners
+   - `auth/` - Login, logout, token refresh, registration
+   - `pages/` - CMS pages (home layout)
+   - `article/[slug]/` - CMS articles
 
 3. **Frontend** - Next.js App Router pages and components
    - Never calls `/api/3rdparty` directly
    - All data fetching goes through `/api/backend/v1/`
 
-### Mock Data (`/src/lib/`)
-- `pim/productGenerator.ts` - Generates 1000 products across 3 categories (Wood, Tools, Hardware)
-- `pim/mockPim.ts` - PIM interface using generated products
+### Data Layer (`/src/lib/`)
+- `pim/odooPim.ts` - Product Information Management via Odoo
+- `pim/productGenerator.ts` - Product type definitions and generation utilities
+- `odoo/client.ts` - Odoo XML-RPC client
 - `cms/mockCms.ts` - Landing page content, hero sections
-- `auth/mockAuth.ts` - User sessions (admin/password)
+- `auth/mockAuth.ts` - User sessions
 - `crm/mockCrm.ts` - Sample customers and organizations
 - `erp/mockErp.ts` - Inventory, orders, facilities, pricing rules
 
@@ -74,6 +72,11 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 - `/` - Home page with hero and category cards
 - `/search` - Search results with sidebar filters
 - `/product/[productId]` - Product detail page
+- `/article/[slug]` - CMS article page
+- `/profile` - User profile page
+- `/admin` - Admin panel (requires employee login)
+  - `?view=customers` - Customer management
+  - `?view=products` - Product management
 
 ### Components (`/src/components/`)
 - `Header.tsx` - Logo, search bar, cart icon
@@ -120,3 +123,100 @@ npm run solr:sync
 
 ### Environment Variables
 - `SOLR_URL` - Solr base URL (default: `http://localhost:8983/solr/products`)
+
+## User Types & Authentication
+
+The system supports 5 distinct user types with different capabilities and authentication methods.
+
+### Authentication Methods
+- **External users** (Private, Professional): Email/password registration or guest checkout
+- **Internal users** (Admin, Sales, Employee): Company Active Directory (AD/SSO)
+
+### User Type Hierarchy
+
+#### 1. Admin
+- **Authentication**: AD login (company SSO)
+- **Capabilities**: Full system access
+- **Responsibilities**: System configuration, user management, all administrative functions
+- **Note**: With great power comes great responsibility - admin actions should be logged and auditable
+
+#### 2. Private Member
+- **Authentication**: Email/password OR guest checkout
+- **Profile**: Person profile with name, address, phone, etc.
+- **Capabilities**:
+  - Browse products and place orders
+  - Can checkout as guest (no account) or create an account
+  - Standard retail pricing
+- **Registration**: Optional - can place orders without registering (guest checkout)
+
+#### 3. Professional (Contractor/Carpenter)
+- **Authentication**: Email/password (business registration)
+- **Profile**: Company profile with business details, tax ID, etc.
+- **Capabilities**:
+  - Tax-exempt purchases (B2B)
+  - Special pricing deals based on:
+    - Contract agreements
+    - Project-based pricing
+    - Volume discounts
+  - Access to professional-only products (if applicable)
+- **Note**: May have multiple users under one company account
+
+#### 4. Sales Person
+- **Authentication**: AD login (company SSO)
+- **Capabilities**:
+  - **Impersonation**: Can place orders on behalf of Private or Professional customers
+  - View and manage customer accounts
+  - Access to sales tools and reporting
+- **Order Attribution**: Orders placed via impersonation are flagged:
+  - `placed_by`: Sales person ID
+  - `on_behalf_of`: Customer ID
+  - Customer sees the order normally, but internal systems track the sales person
+- **Note**: Cannot impersonate Admin or other internal users
+
+#### 5. Employee
+- **Authentication**: AD login (company SSO)
+- **Profile**: Linked to company AD, functions as a private customer
+- **Capabilities**:
+  - Shop as a private customer within the system
+  - **Employee discount**: Special pricing/discount (configurable)
+- **Note**: Treated like private customers but with employee benefits
+
+### Impersonation Rules
+```
+Sales Person can impersonate:
+  ✓ Private Member
+  ✓ Professional
+  ✗ Admin
+  ✗ Sales Person
+  ✗ Employee
+```
+
+### Pricing Hierarchy (highest to lowest priority)
+1. Contract-specific pricing (Professional with active contract)
+2. Project-based pricing (Professional on specific project)
+3. Employee discount (Employee users)
+4. Professional base pricing (tax-exempt, possible volume discounts)
+5. Standard retail pricing (Private members, guests)
+
+### Session Context
+When a user is logged in, the session should track:
+```typescript
+interface UserSession {
+  userId: string;
+  userType: 'admin' | 'private' | 'professional' | 'sales' | 'employee';
+  authMethod: 'password' | 'ad';
+
+  // For impersonation (sales only)
+  impersonating?: {
+    customerId: string;
+    customerType: 'private' | 'professional';
+    startedAt: Date;
+  };
+
+  // For employees
+  employeeDiscount?: number; // percentage
+
+  // For professionals
+  contracts?: ContractReference[];
+  activeProject?: ProjectReference;
+}
