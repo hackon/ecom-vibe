@@ -59,7 +59,7 @@ const cmsData: {
           type: 'carousel',
           title: 'Best January Deals',
           visibleCount: 4,
-          productIds: ['w0', 'w1', 'w2', 'w3', 't0', 't1', 't2', 'h0', 'h1', 'h2']
+          productIds: ['WD-OAK-0000', 'WD-BCH-0001', 'WD-WAL-0002', 'WD-BIR-0003', 'TL-FIL-0000', 'TL-FIL-0001', 'TL-HAN-0002', 'HW-HIN-0000', 'HW-HIN-0001', 'HW-CAT-0002']
         },
         {
           type: 'hero-banner',
@@ -74,7 +74,7 @@ const cmsData: {
           type: 'carousel',
           title: 'Power Drill Offers',
           visibleCount: 4,
-          productIds: ['t5', 't10', 't15', 't20', 't25', 't30', 't35']
+          productIds: ['TL-POW-0008', 'TL-POW-0038', 'TL-POW-0071', 'TL-POW-0182', 'TL-POW-0262', 'TL-POW-0294']
         }
       ],
       status: 'published',
