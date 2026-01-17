@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Mail, Lock, User, Building2, Briefcase, Loader2, ArrowLeft } from 'lucide-react';
+import { X, Mail, Lock, User, Building2, Loader2, ArrowLeft, Shield } from 'lucide-react';
 import { useAuth, CustomerProfile, CustomerType } from '@/contexts/AuthContext';
 import styles from './AuthDrawer.module.css';
 
-type AuthMode = 'login' | 'register' | 'profile';
+type AuthMode = 'login' | 'register' | 'profile' | 'ad-login';
 
 interface AuthDrawerProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface AuthDrawerProps {
 }
 
 export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: AuthDrawerProps) {
-  const { login, register, completeProfile, needsProfile } = useAuth();
+  const { login, loginWithAD, register, completeProfile, needsProfile } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
@@ -37,10 +37,6 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
   const [orgName, setOrgName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
 
-  // Employee profile
-  const [employeeEmail, setEmployeeEmail] = useState('');
-  const [department, setDepartment] = useState('');
-
   const resetForm = () => {
     setEmail('');
     setPassword('');
@@ -54,8 +50,6 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
     setOrgId('');
     setOrgName('');
     setContactPerson('');
-    setEmployeeEmail('');
-    setDepartment('');
   };
 
   const handleClose = () => {
@@ -81,6 +75,22 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
       }
     } else {
       setError(result.error || 'Login failed');
+    }
+  };
+
+  const handleADLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const result = await loginWithAD(email, password);
+
+    setLoading(false);
+
+    if (result.success) {
+      handleClose();
+    } else {
+      setError(result.error || 'AD Login failed');
     }
   };
 
@@ -128,18 +138,12 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
         return;
       }
       profile = { type: 'private', firstName, lastName, address, phone };
-    } else if (customerType === 'professional') {
+    } else {
       if (!orgId || !orgName || !contactPerson || !address || !phone) {
         setError('Please fill in all fields');
         return;
       }
       profile = { type: 'professional', orgId, orgName, contactPerson, address, phone };
-    } else {
-      if (!employeeEmail) {
-        setError('Please fill in your employee email');
-        return;
-      }
-      profile = { type: 'employee', employeeEmail, department: department || undefined };
     }
 
     setLoading(true);
@@ -164,6 +168,7 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
         <div className={styles.header}>
           <h2 className={styles.title}>
             {mode === 'login' && 'Sign In'}
+            {mode === 'ad-login' && 'Employee Sign In'}
             {mode === 'register' && 'Create Account'}
             {mode === 'profile' && 'Complete Your Profile'}
           </h2>
@@ -223,10 +228,88 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
                 </button>
               </p>
 
+              <div className={styles.divider}>
+                <span>or</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { setMode('ad-login'); setError(''); resetForm(); }}
+                className={styles.adLoginButton}
+              >
+                <Shield size={18} />
+                Sign in with Company Account
+              </button>
+
               <div className={styles.demoCredentials}>
-                <p><strong>Demo accounts:</strong></p>
-                <p>admin@buildymcbuild.com / password123</p>
+                <p><strong>Demo customer accounts:</strong></p>
                 <p>john@example.com / password123</p>
+                <p>contact@woodworks.com / password123</p>
+              </div>
+            </form>
+          )}
+
+          {/* AD Login Form */}
+          {mode === 'ad-login' && (
+            <form onSubmit={handleADLogin} className={styles.form}>
+              {error && <div className={styles.error}>{error}</div>}
+
+              <div className={styles.adLoginHeader}>
+                <Shield size={32} className={styles.adIcon} />
+                <p className={styles.adLoginDesc}>
+                  Sign in with your Buildy McBuild company credentials
+                </p>
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>Company Email</label>
+                <div className={styles.inputWrapper}>
+                  <Mail size={18} className={styles.inputIcon} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your.name@buildymcbuild.com"
+                    className={styles.input}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>Password</label>
+                <div className={styles.inputWrapper}>
+                  <Lock size={18} className={styles.inputIcon} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className={styles.input}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className={styles.submitButton} disabled={loading}>
+                {loading ? <Loader2 size={20} className={styles.spinner} /> : 'Sign In'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(''); resetForm(); }}
+                className={styles.backToCustomerLogin}
+              >
+                <ArrowLeft size={16} />
+                Back to customer login
+              </button>
+
+              <div className={styles.demoCredentials}>
+                <p><strong>Demo AD accounts:</strong></p>
+                <p>sarah.johnson@buildymcbuild.com (Admin)</p>
+                <p>emily.rodriguez@buildymcbuild.com (Sales)</p>
+                <p>lisa.martinez@buildymcbuild.com (Employee)</p>
+                <p><em>Password: adpassword</em></p>
               </div>
             </form>
           )}
@@ -329,16 +412,6 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
                     <Building2 size={32} />
                     <span className={styles.customerTypeTitle}>Professional</span>
                     <span className={styles.customerTypeDesc}>Business customer</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCustomerType('employee')}
-                    className={styles.customerTypeCard}
-                  >
-                    <Briefcase size={32} />
-                    <span className={styles.customerTypeTitle}>Employee</span>
-                    <span className={styles.customerTypeDesc}>Internal staff</span>
                   </button>
                 </div>
               )}
@@ -480,47 +553,6 @@ export default function AuthDrawer({ isOpen, onClose, initialMode = 'login' }: A
                       placeholder="+1 555-123-4567"
                       className={styles.input}
                       required
-                    />
-                  </div>
-
-                  <button type="submit" className={styles.submitButton} disabled={loading}>
-                    {loading ? <Loader2 size={20} className={styles.spinner} /> : 'Complete Registration'}
-                  </button>
-                </>
-              )}
-
-              {/* Employee Form */}
-              {customerType === 'employee' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setCustomerType(null)}
-                    className={styles.backButton}
-                  >
-                    <ArrowLeft size={16} />
-                    Change customer type
-                  </button>
-
-                  <div className={styles.inputGroup}>
-                    <label className={styles.label}>Employee Email</label>
-                    <input
-                      type="email"
-                      value={employeeEmail}
-                      onChange={(e) => setEmployeeEmail(e.target.value)}
-                      placeholder="your.name@buildymcbuild.com"
-                      className={styles.input}
-                      required
-                    />
-                  </div>
-
-                  <div className={styles.inputGroup}>
-                    <label className={styles.label}>Department (Optional)</label>
-                    <input
-                      type="text"
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      placeholder="Sales, Support, etc."
-                      className={styles.input}
                     />
                   </div>
 

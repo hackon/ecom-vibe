@@ -1,7 +1,9 @@
 // Mock Auth State with JWT-like tokens
+// This module handles external user authentication (private, professional customers)
+// Internal users (admin, sales, employee) authenticate via Azure AD - see mockAzureAD.ts
 
-// Customer types
-export type CustomerType = 'private' | 'professional' | 'employee';
+// Customer types (external users only)
+export type CustomerType = 'private' | 'professional';
 
 export interface PrivateCustomerProfile {
   type: 'private';
@@ -20,13 +22,7 @@ export interface ProfessionalCustomerProfile {
   phone: string;
 }
 
-export interface EmployeeCustomerProfile {
-  type: 'employee';
-  employeeEmail: string;
-  department?: string;
-}
-
-export type CustomerProfile = PrivateCustomerProfile | ProfessionalCustomerProfile | EmployeeCustomerProfile;
+export type CustomerProfile = PrivateCustomerProfile | ProfessionalCustomerProfile;
 
 export interface User {
   id: string;
@@ -54,23 +50,12 @@ const users: Map<string, User> = new Map();
 const sessions: Map<string, Session> = new Map();
 const refreshTokens: Map<string, string> = new Map(); // refreshToken -> sessionId
 
-// Seed some users
+// Seed external customers (Private and Professional)
+// Note: Internal users (admin, sales, employee) use Azure AD authentication
+
+// Private customers (2 users)
 users.set('user-1', {
   id: 'user-1',
-  email: 'admin@buildymcbuild.com',
-  passwordHash: 'password123',
-  customerType: 'employee',
-  profile: {
-    type: 'employee',
-    employeeEmail: 'admin@buildymcbuild.com',
-    department: 'Management'
-  },
-  createdAt: '2026-01-01T00:00:00Z',
-  updatedAt: '2026-01-01T00:00:00Z'
-});
-
-users.set('user-2', {
-  id: 'user-2',
   email: 'john@example.com',
   passwordHash: 'password123',
   customerType: 'private',
@@ -85,6 +70,23 @@ users.set('user-2', {
   updatedAt: '2026-01-05T10:00:00Z'
 });
 
+users.set('user-2', {
+  id: 'user-2',
+  email: 'mary.carpenter@gmail.com',
+  passwordHash: 'password123',
+  customerType: 'private',
+  profile: {
+    type: 'private',
+    firstName: 'Mary',
+    lastName: 'Carpenter',
+    address: '789 Pine Avenue, Eugene, OR 97401',
+    phone: '+1 541-555-0789'
+  },
+  createdAt: '2026-01-08T14:30:00Z',
+  updatedAt: '2026-01-08T14:30:00Z'
+});
+
+// Professional customers (2 users)
 users.set('user-3', {
   id: 'user-3',
   email: 'contact@woodworks.com',
@@ -100,6 +102,23 @@ users.set('user-3', {
   },
   createdAt: '2026-01-03T14:00:00Z',
   updatedAt: '2026-01-03T14:00:00Z'
+});
+
+users.set('user-4', {
+  id: 'user-4',
+  email: 'orders@precisionframers.com',
+  passwordHash: 'password123',
+  customerType: 'professional',
+  profile: {
+    type: 'professional',
+    orgId: 'ORG-002',
+    orgName: 'Precision Framers LLC',
+    contactPerson: 'Robert Martinez',
+    address: '1200 Construction Blvd, Tacoma, WA 98402',
+    phone: '+1 253-555-1200'
+  },
+  createdAt: '2026-01-06T09:15:00Z',
+  updatedAt: '2026-01-06T09:15:00Z'
 });
 
 // Helper to create JWT-like token

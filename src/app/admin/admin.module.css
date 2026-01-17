@@ -29,6 +29,25 @@
   color: #f59e0b;
 }
 
+.sidebarUser {
+  padding: 16px 20px;
+  border-bottom: 1px solid #374151;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f3f4f6;
+  margin-bottom: 2px;
+}
+
+.userRole {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .nav {
   padding: 12px;
 }

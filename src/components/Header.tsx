@@ -4,7 +4,7 @@ import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import SearchContainer from './SearchContainer';
 import AuthDrawer from './AuthDrawer';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, isADUser, canAccessAdmin } from '@/contexts/AuthContext';
 import { ShoppingCart, User, LogOut, ChevronDown, Settings } from 'lucide-react';
 import styles from './Header.module.css';
 
@@ -50,11 +50,28 @@ function UserMenu() {
   }
 
   if (isAuthenticated && user) {
-    const displayName = user.profile?.type === 'private'
-      ? user.profile.firstName
-      : user.profile?.type === 'professional'
-        ? user.profile.orgName
-        : user.email.split('@')[0];
+    // Get display name based on user type
+    let displayName: string;
+    let userTypeLabel: string;
+
+    if (isADUser(user)) {
+      displayName = user.givenName || user.displayName;
+      userTypeLabel = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+    } else {
+      // Customer user
+      if (user.profile?.type === 'private') {
+        displayName = user.profile.firstName;
+      } else if (user.profile?.type === 'professional') {
+        displayName = user.profile.orgName;
+      } else {
+        displayName = user.email.split('@')[0];
+      }
+      userTypeLabel = user.customerType === 'private'
+        ? 'Private Customer'
+        : user.customerType === 'professional'
+          ? 'Business Customer'
+          : '';
+    }
 
     return (
       <div className={styles.userMenuWrapper}>
@@ -73,20 +90,16 @@ function UserMenu() {
             <div className={styles.dropdown}>
               <div className={styles.dropdownHeader}>
                 <p className={styles.dropdownEmail}>{user.email}</p>
-                <p className={styles.dropdownType}>
-                  {user.customerType === 'private' && 'Private Customer'}
-                  {user.customerType === 'professional' && 'Business Customer'}
-                  {user.customerType === 'employee' && 'Employee'}
-                </p>
+                <p className={styles.dropdownType}>{userTypeLabel}</p>
               </div>
               <div className={styles.dropdownDivider} />
-              {(user.customerType === 'private' || user.customerType === 'professional') && (
+              {(isADUser(user) || user.customerType) && (
                 <Link href="/profile" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
                   <User size={16} />
                   Profile
                 </Link>
               )}
-              {user.customerType === 'employee' && (
+              {canAccessAdmin(user) && (
                 <Link href="/admin" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
                   <Settings size={16} />
                   Admin

@@ -3,7 +3,7 @@
 import React, { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, canAccessAdmin, isADUser } from '@/contexts/AuthContext';
 import { Users, Package, LayoutDashboard } from 'lucide-react';
 import styles from './admin.module.css';
 
@@ -43,7 +43,7 @@ export default function AdminLayout({
     if (!isLoading && !isAuthenticated) {
       router.push('/');
     }
-    if (!isLoading && isAuthenticated && user?.customerType !== 'employee') {
+    if (!isLoading && isAuthenticated && !canAccessAdmin(user)) {
       router.push('/');
     }
   }, [isLoading, isAuthenticated, user, router]);
@@ -56,9 +56,13 @@ export default function AdminLayout({
     );
   }
 
-  if (!isAuthenticated || user?.customerType !== 'employee') {
+  if (!isAuthenticated || !canAccessAdmin(user)) {
     return null;
   }
+
+  // Get display name for sidebar
+  const displayName = user && isADUser(user) ? user.displayName : user?.email;
+  const role = user && isADUser(user) ? user.role : null;
 
   return (
     <div className={styles.adminLayout}>
@@ -67,6 +71,12 @@ export default function AdminLayout({
           <LayoutDashboard size={24} />
           <span>Admin Panel</span>
         </div>
+        {role && (
+          <div className={styles.sidebarUser}>
+            <div className={styles.userName}>{displayName}</div>
+            <div className={styles.userRole}>{role.charAt(0).toUpperCase() + role.slice(1)}</div>
+          </div>
+        )}
         <Suspense fallback={<div className={styles.nav}>Loading...</div>}>
           <AdminNav />
         </Suspense>

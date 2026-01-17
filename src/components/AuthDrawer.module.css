@@ -221,7 +221,7 @@
 
 .customerTypeGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
@@ -269,6 +269,86 @@
 }
 
 .backButton:hover {
+  color: #d97706;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.divider span {
+  padding: 0 12px;
+}
+
+/* AD Login Styles */
+.adLoginButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: #1e40af;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.adLoginButton:hover {
+  background: #1e3a8a;
+}
+
+.adLoginHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  margin-bottom: 8px;
+}
+
+.adIcon {
+  color: #1e40af;
+}
+
+.adLoginDesc {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+.backToCustomerLogin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 12px;
+  width: 100%;
+  transition: color 0.2s;
+}
+
+.backToCustomerLogin:hover {
   color: #d97706;
 }
 

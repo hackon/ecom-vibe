@@ -2,8 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { User, Building2, MapPin, Phone, Mail } from 'lucide-react';
+import { useAuth, isADUser, isCustomerUser } from '@/contexts/AuthContext';
+import { User, Building2, MapPin, Phone, Mail, Briefcase, Shield } from 'lucide-react';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
@@ -14,10 +14,7 @@ export default function ProfilePage() {
     if (!isLoading && !isAuthenticated) {
       router.push('/');
     }
-    if (!isLoading && isAuthenticated && user?.customerType === 'employee') {
-      router.push('/admin');
-    }
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [isLoading, isAuthenticated, router]);
 
   if (isLoading) {
     return (
@@ -27,7 +24,97 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user || !user.profile) {
+  if (!user) {
+    return null;
+  }
+
+  // AD User Profile
+  if (isADUser(user)) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <div className={styles.header}>
+            <div className={styles.avatar}>
+              <Shield size={32} />
+            </div>
+            <div className={styles.headerInfo}>
+              <h1 className={styles.title}>{user.displayName}</h1>
+              <p className={styles.subtitle}>
+                {user.role === 'admin' && 'Administrator'}
+                {user.role === 'sales' && 'Sales Representative'}
+                {user.role === 'employee' && 'Employee'}
+              </p>
+            </div>
+          </div>
+
+          <div className={styles.divider} />
+
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Contact Information</h2>
+
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <Mail className={styles.infoIcon} size={18} />
+                <div>
+                  <p className={styles.infoLabel}>Email</p>
+                  <p className={styles.infoValue}>{user.email}</p>
+                </div>
+              </div>
+
+              <div className={styles.infoItem}>
+                <User className={styles.infoIcon} size={18} />
+                <div>
+                  <p className={styles.infoLabel}>Full Name</p>
+                  <p className={styles.infoValue}>{user.givenName} {user.surname}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.divider} />
+
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Work Information</h2>
+
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <Briefcase className={styles.infoIcon} size={18} />
+                <div>
+                  <p className={styles.infoLabel}>Job Title</p>
+                  <p className={styles.infoValue}>{user.jobTitle}</p>
+                </div>
+              </div>
+
+              <div className={styles.infoItem}>
+                <Building2 className={styles.infoIcon} size={18} />
+                <div>
+                  <p className={styles.infoLabel}>Department</p>
+                  <p className={styles.infoValue}>{user.department}</p>
+                </div>
+              </div>
+
+              <div className={styles.infoItem}>
+                <div>
+                  <p className={styles.infoLabel}>Employee ID</p>
+                  <p className={styles.infoValue}>{user.employeeId}</p>
+                </div>
+              </div>
+
+              <div className={styles.infoItem}>
+                <div>
+                  <p className={styles.infoLabel}>Account ID</p>
+                  <p className={styles.infoValue}>{user.id}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Customer User - needs profile completion
+  if (!isCustomerUser(user) || !user.profile) {
     return (
       <div className={styles.container}>
         <div className={styles.card}>
@@ -40,6 +127,7 @@ export default function ProfilePage() {
 
   const profile = user.profile;
 
+  // Customer User Profile
   return (
     <div className={styles.container}>
       <div className={styles.card}>

@@ -8,14 +8,13 @@ import styles from './admin.module.css';
 interface Customer {
   id: string;
   email: string;
-  customerType: 'private' | 'professional' | 'employee';
+  customerType: 'private' | 'professional';
   profile?: {
     type: string;
     firstName?: string;
     lastName?: string;
     orgName?: string;
     contactPerson?: string;
-    department?: string;
   };
   createdAt: string;
 }
@@ -133,9 +132,6 @@ function AdminContent() {
     if (customer.profile.type === 'professional' && customer.profile.orgName) {
       return customer.profile.orgName;
     }
-    if (customer.profile.type === 'employee' && customer.profile.department) {
-      return `${customer.email.split('@')[0]} (${customer.profile.department})`;
-    }
 
     return customer.email.split('@')[0];
   };
@@ -146,8 +142,6 @@ function AdminContent() {
         return styles.badgePrivate;
       case 'professional':
         return styles.badgeProfessional;
-      case 'employee':
-        return styles.badgeEmployee;
       default:
         return '';
     }
@@ -219,7 +213,6 @@ function AdminContent() {
                         <span className={`${styles.badge} ${getBadgeClass(customer.customerType)}`}>
                           {customer.customerType === 'private' && 'Private'}
                           {customer.customerType === 'professional' && 'Professional'}
-                          {customer.customerType === 'employee' && 'Employee'}
                         </span>
                       </td>
                       <td>{formatDate(customer.createdAt)}</td>

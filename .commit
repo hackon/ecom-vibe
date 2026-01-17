@@ -1,10 +1,12 @@
-feat: use SKU as product ID instead of Odoo internal ID
+feat: implement mock Azure AD authentication for internal users
 
-- Update sync script to use SKU (default_code) as product ID for cleaner URLs
-- Update odooPim adapter to use SKU as ID and look up products by SKU
-- Simplify getProductById and getProductsByIds to use SKU-based lookups
-- Product URLs are now /product/WD-0001 instead of /product/odoo-123
-- Create unified sync script (products.json → Odoo → Solr)
-- Remove old separate sync scripts (sync-odoo.ts, sync-solr.ts)
-- Update package.json with unified `sync` command
-- Update CLAUDE.md with new sync workflow documentation
+- Create mockAzureAD.ts with JWT token handling and session management
+- Add 6 AD users (2 Admin, 2 Sales, 2 Employee) with realistic profiles
+- Add Azure AD API route at /api/3rdparty/azure-ad
+- Add backend v1 endpoint at /api/backend/v1/auth/ad-login
+- Update AuthContext with loginWithAD and dual auth method support
+- Update Header component to show correct user info for AD users
+- Update AuthDrawer with separate AD login form
+- Update admin layout to use canAccessAdmin helper
+- Remove employee as customer type (employees now use AD)
+- Update profile page to redirect AD users to admin
