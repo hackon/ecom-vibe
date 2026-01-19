@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getCMSData, createPage, updatePage, getHomeLayout, getArticleBySlug, getAllArticles } from '@/lib/cms/mockCms';
+import { getCMSData, getHomeLayout, getArticleBySlug, getAllArticles } from '@/lib/cms/strapiCms';
+import { createPage, updatePage } from '@/lib/cms/mockCms';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

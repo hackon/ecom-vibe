@@ -60,7 +60,9 @@ services:
       timeout: 5s
       retries: 5
 
+
 volumes:
   solr_data:
   odoo_data:
   odoo_db_data:
+  strapi_data:
