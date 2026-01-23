@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getArticleBySlug } from '@/lib/cms/strapiCms';
+import { getArticleBySlug } from '@/lib/cms/mockCms';
 
 // GET /api/3rdparty/cms/article/[slug] - returns article by slug
 export async function GET(

@@ -8,10 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "sync": "tsx --env-file=.env scripts/sync.ts",
-    "sync:strapi": "tsx --env-file=.env scripts/syncStrapi.ts",
-    "odoo:test": "tsx --env-file=.env scripts/test-odoo.ts",
-    "strapi:init": "tsx --env-file=.env scripts/initStrapi.ts",
-    "strapi:test": "tsx --env-file=.env scripts/testStrapi.ts"
+    "odoo:test": "tsx --env-file=.env scripts/test-odoo.ts"
   },
   "dependencies": {
     "@foxglove/xmlrpc": "^1.3.0",

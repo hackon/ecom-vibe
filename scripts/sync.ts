@@ -326,33 +326,10 @@ async function verifySolrIndex(): Promise<void> {
 // MAIN
 // ============================================
 
-// ============================================
-// STRAPI SYNC
-// ============================================
-
-async function syncStrapi() {
-  console.log('\n-------------------------------------------');
-  console.log('PHASE 4: Syncing CMS content to Strapi');
-  console.log('-------------------------------------------');
-
-  try {
-    // Import Strapi sync dynamically to avoid hard dependency
-    const { execSync } = await import('child_process');
-    execSync('npx tsx scripts/syncStrapi.ts', { stdio: 'inherit' });
-    console.log('✓ Strapi sync completed');
-  } catch (error) {
-    console.warn('⚠ Strapi sync skipped or failed (this is optional)');
-    if (error instanceof Error) {
-      console.warn(`  Reason: ${error.message}`);
-    }
-  }
-}
-
 async function main() {
   console.log('===========================================');
-  console.log('  Unified Sync');
-  console.log('  Products: products.json → Odoo → Solr');
-  console.log('  CMS: mockCms → Strapi');
+  console.log('  Unified Product Sync');
+  console.log('  products.json → Odoo → Solr');
   console.log('===========================================\n');
 
   const client = createOdooClient();
@@ -398,19 +375,13 @@ async function main() {
     await indexToSolr(solrDocs);
     await verifySolrIndex();
 
-    // PHASE 4: Sync CMS to Strapi
-    await syncStrapi();
-
     // Summary
     console.log('\n===========================================');
     console.log('  Sync Complete!');
     console.log('===========================================');
     console.log(`  Products in Odoo: ${odooCount}`);
     console.log(`  Products in Solr: ${solrDocs.length}`);
-    console.log(`\nAdmin UIs:`);
-    console.log(`  Solr: http://localhost:8983/solr/#/products/query`);
-    console.log(`  Odoo: http://localhost:8069`);
-    console.log(`  Strapi: http://localhost:1337/admin`);
+    console.log(`\nSolr Admin: http://localhost:8983/solr/#/products/query`);
 
   } catch (error) {
     console.error('Sync failed:', error);

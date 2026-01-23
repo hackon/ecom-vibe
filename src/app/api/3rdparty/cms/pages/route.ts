@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getHomeLayout } from '@/lib/cms/strapiCms';
+import { getHomeLayout } from '@/lib/cms/mockCms';
 
 // GET /api/3rdparty/cms/pages - returns home/index page layout
 export async function GET() {

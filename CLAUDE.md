@@ -48,8 +48,7 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 - `pim/odooPim.ts` - Product Information Management via Odoo
 - `pim/productGenerator.ts` - Product type definitions and generation utilities
 - `odoo/client.ts` - Odoo XML-RPC client
-- `cms/mockCms.ts` - Landing page content, hero sections (default)
-- `cms/dotCms.ts` - DotCMS integration with automatic fallback to mockCms
+- `cms/mockCms.ts` - Landing page content, hero sections
 - `auth/mockAuth.ts` - User sessions
 - `crm/mockCrm.ts` - Sample customers and organizations
 - `erp/mockErp.ts` - Inventory, orders, facilities, pricing rules
@@ -60,9 +59,6 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 - `odoo/addons/` - Custom Odoo addons
 - `odoo/config/` - Odoo configuration files
 - `odoo/sessions/` - Odoo session data
-- `dotcms/client.ts` - DotCMS REST API client
-- `dotcms/schemas.ts` - DotCMS content type definitions
-- `dotcms/README.md` - DotCMS setup guide
 
 ## Current Implementation
 
