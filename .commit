@@ -1,8 +1,25 @@
-refactor: remove Strapi and DotCMS integrations, use mockCms only
+refactor: migrate from Odoo to external PIM API
 
-- Remove all Strapi and DotCMS files and directories (scripts, libraries, 3rdParty configs)
-- Update sync script to remove Strapi phase
-- Update package.json to remove strapi:init, strapi:test, sync:strapi scripts
-- Update CMS API routes to import directly from mockCms
-- Update CLAUDE.md documentation to remove Strapi/DotCMS references
-- System now uses only mockCms for CMS data (simpler architecture)
+Replace Odoo XML-RPC based PIM integration with a new external REST API
+using Bearer token authentication.
+
+Changes:
+- Add pimClient.ts with HTTP client for external PIM API
+- Add externalPim.ts adapter matching odooPim interface
+- Update 3rdparty/pim route to use new adapter
+- Rewrite sync.ts to pull from external PIM API and index to Solr
+- Remove Odoo client, adapter, and test script
+- Remove @foxglove/xmlrpc dependency
+- Update .env.template with new PIM_URL and PIM_TOKEN variables
+- Update CLAUDE.md documentation
+- Use /api/v1/* endpoints instead of /api/public/* (per updated spec)
+- Explicitly filter for published products in all PIM queries
+- Update types to match latest OpenAPI spec:
+  - Add ProductListItem for list responses
+  - Add Product with categories/classifications for detail responses
+  - Add ProductCategoryAssociation and ProductClassificationAssociation types
+  - Remove timestamps from ProductAttribute type
+- Add category fetching to sync script:
+  - Pull categories from PIM API before products
+  - Display category hierarchy with product counts
+  - Build category map for future category-product association

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import * as pim from '@/lib/pim/odooPim';
+import * as pim from '@/lib/pim/externalPim';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

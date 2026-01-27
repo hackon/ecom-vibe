@@ -45,9 +45,9 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
    - All data fetching goes through `/api/backend/v1/`
 
 ### Data Layer (`/src/lib/`)
-- `pim/odooPim.ts` - Product Information Management via Odoo
+- `pim/pimClient.ts` - HTTP client for external PIM API with Bearer token auth
+- `pim/externalPim.ts` - PIM adapter that converts PIM API products to internal format
 - `pim/productGenerator.ts` - Product type definitions and generation utilities
-- `odoo/client.ts` - Odoo XML-RPC client
 - `cms/mockCms.ts` - Landing page content, hero sections
 - `auth/mockAuth.ts` - User sessions
 - `crm/mockCrm.ts` - Sample customers and organizations
@@ -56,9 +56,6 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 ### 3rd Party Configurations (`/3rdParty/`)
 - `solr/configsets/products/conf/schema.xml` - Product schema with facet fields
 - `solr/configsets/products/conf/solrconfig.xml` - Search handlers and analyzers
-- `odoo/addons/` - Custom Odoo addons
-- `odoo/config/` - Odoo configuration files
-- `odoo/sessions/` - Odoo session data
 
 ## Current Implementation
 
@@ -102,8 +99,7 @@ Frontend → /api/backend/v1/* → /api/3rdparty/*
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run lint` - Run ESLint
-- `npm run sync` - Sync products (products.json → Odoo → Solr)
-- `npm run odoo:test` - Test Odoo connection
+- `npm run sync` - Sync products from external PIM API to Solr
 
 ## Docker Setup
 
@@ -114,8 +110,6 @@ docker-compose up -d
 
 This starts:
 - Solr (search engine) on port 8983
-- Odoo (PIM) on port 8069
-- PostgreSQL (Odoo database) on port 5432
 
 ### Syncing Products
 After Docker services are running, sync the product data:
@@ -123,22 +117,19 @@ After Docker services are running, sync the product data:
 npm run sync
 ```
 
-This unified sync script:
-1. Syncs products from `products.json` to Odoo
-2. Pulls products from Odoo (with Odoo-assigned IDs)
+This sync script:
+1. Pulls published products from external PIM API
+2. Converts products to internal format
 3. Indexes products to Solr for search
 
 ### Admin UIs
 - Solr: http://localhost:8983/solr/#/products/query
-- Odoo: http://localhost:8069
 
 ### Environment Variables
 See `.env.template` for required variables:
 - `SOLR_URL` - Solr base URL (default: `http://localhost:8983/solr/products`)
-- `ODOO_URL` - Odoo base URL (default: `http://localhost:8069`)
-- `ODOO_DB` - Odoo database name
-- `ODOO_USERNAME` - Odoo username
-- `ODOO_API_KEY` - Odoo API key
+- `PIM_URL` - External PIM API base URL
+- `PIM_TOKEN` - PIM API Bearer token for authentication
 
 ## User Types & Authentication
 

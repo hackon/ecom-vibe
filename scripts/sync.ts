@@ -1,22 +1,31 @@
 /**
  * Unified Sync Script
  *
- * Syncs products from products.json → Odoo → Solr
+ * Syncs products from External PIM API → Solr
  *
- * The Odoo IDs become the canonical product IDs used throughout the system.
- *
- * Usage: npx tsx scripts/sync.ts
+ * Usage: npx tsx --env-file=.env scripts/sync.ts
  */
 
-import { createOdooClient, OdooClient, OdooProduct } from '../src/lib/odoo/client';
-import { generatedProducts, Product, ProductAttributes } from '../src/lib/pim/productGenerator';
+import { createPimClient, PimProductListItem, PimProductAttribute, PimProductIdentifier, PimCategory } from '../src/lib/pim/pimClient';
+import { ProductAttributes } from '../src/lib/pim/productGenerator';
 
 const SOLR_URL = process.env.SOLR_URL || 'http://localhost:8983/solr/products';
-const ODOO_BATCH_SIZE = 50;
 const SOLR_BATCH_SIZE = 100;
 
-interface CategoryMap {
-  [key: string]: number;
+// Category map for resolving category IDs to names
+let categoryMap: Map<string, PimCategory> = new Map();
+
+interface ProductFromPim {
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  category: string;
+  attributes: ProductAttributes;
+  stock: number;
+  images: string[];
 }
 
 interface SolrDocument {
@@ -42,186 +51,145 @@ interface SolrDocument {
 }
 
 // ============================================
-// ODOO SYNC FUNCTIONS
+// PIM HELPER FUNCTIONS
 // ============================================
 
-async function ensureCategories(client: OdooClient): Promise<CategoryMap> {
-  console.log('Setting up product categories...');
+function extractSku(identifiers: PimProductIdentifier[]): string {
+  const skuIdentifier = identifiers.find(i => i.type === 'sku');
+  return skuIdentifier?.value || '';
+}
 
-  const categoryNames = ['Wood', 'Tools', 'Hardware'];
-  const categoryMap: CategoryMap = {};
+function getAttributeValue(attributes: PimProductAttribute[], key: string): string | null {
+  const attr = attributes.find(a => a.key === key);
+  return attr?.value ?? null;
+}
 
-  const existingCategories = await client.getCategories();
-  const existingMap = new Map(existingCategories.map(c => [c.name, c.id]));
+function convertFromPim(pimProduct: PimProductListItem): ProductFromPim {
+  console.log(`Converting PIM product ID: ${JSON.stringify(pimProduct)}`);
+  const sku = extractSku(pimProduct.identifiers);
 
-  let parentId = existingMap.get('Saleable') || existingMap.get('All') || 1;
+  // Extract core fields from attributes
+  const name = getAttributeValue(pimProduct.attributes, 'name') || 'Unknown Product';
+  const description = getAttributeValue(pimProduct.attributes, 'description') || '';
+  const priceStr = getAttributeValue(pimProduct.attributes, 'price');
+  const price = priceStr ? parseFloat(priceStr) : 0;
+  const currency = getAttributeValue(pimProduct.attributes, 'currency') || 'USD';
+  const category = getAttributeValue(pimProduct.attributes, 'category') || 'Unknown';
+  const stockStr = getAttributeValue(pimProduct.attributes, 'stock');
+  const stock = stockStr ? parseInt(stockStr, 10) : 0;
 
-  for (const name of categoryNames) {
-    const existing = existingCategories.find(c => c.name === name);
-    if (existing) {
-      categoryMap[name] = existing.id;
-      console.log(`  Category "${name}" already exists with ID: ${existing.id}`);
-    } else {
-      const id = await client.createCategory(name, parentId);
-      categoryMap[name] = id;
-      console.log(`  Created category "${name}" with ID: ${id}`);
+  // Parse images
+  let images: string[] = [];
+  const imagesStr = getAttributeValue(pimProduct.attributes, 'images');
+  if (imagesStr) {
+    try {
+      const parsed = JSON.parse(imagesStr);
+      images = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      images = [imagesStr];
     }
   }
 
-  return categoryMap;
-}
+  if (images.length === 0) {
+    images = [`https://placehold.co/400x300/8B4513/F5DEB3?text=${encodeURIComponent(name.substring(0, 20))}`];
+  }
 
-function convertProductToOdoo(product: Product, categoryMap: CategoryMap) {
-  const attributesJson = JSON.stringify(product.attributes, null, 2);
-  const fullDescription = `${product.description}\n\n--- Attributes ---\n${attributesJson}`;
+  // Extract product-specific attributes
+  const attributes: ProductAttributes = {};
+  const attrKeys: (keyof ProductAttributes)[] = [
+    'woodType', 'finish', 'dimensions', 'grade', 'type', 'material',
+    'brand', 'bladeLength', 'pieces', 'size', 'capacity', 'power',
+    'padSize', 'packSize', 'diameter', 'length', 'sizes', 'pins'
+  ];
+
+  for (const key of attrKeys) {
+    const value = getAttributeValue(pimProduct.attributes, key);
+    if (value) {
+      attributes[key] = value;
+    }
+  }
 
   return {
-    name: product.name,
-    default_code: product.sku,
-    list_price: product.price,
-    description_sale: product.description,
-    description: fullDescription,
-    categ_id: categoryMap[product.category] || 1,
-    type: 'product' as const,
-    sale_ok: true,
-    purchase_ok: true,
-    active: true,
-  };
-}
-
-async function syncToOdoo(client: OdooClient, products: Product[], categoryMap: CategoryMap): Promise<void> {
-  console.log(`\nSyncing ${products.length} products to Odoo...`);
-
-  const existingCount = await client.getProductCount();
-  console.log(`Current products in Odoo: ${existingCount}`);
-
-  console.log('Checking for existing products...');
-  const existingProducts = await client.getProducts([], {
-    fields: ['id', 'default_code'],
-    limit: 10000
-  });
-  const existingSkus = new Set(existingProducts.map(p => p.default_code).filter(Boolean));
-  console.log(`Found ${existingSkus.size} products with SKUs in Odoo`);
-
-  const newProducts = products.filter(p => !existingSkus.has(p.sku));
-  console.log(`Products to create: ${newProducts.length} (skipping ${products.length - newProducts.length} existing)`);
-
-  if (newProducts.length === 0) {
-    console.log('All products already exist in Odoo!');
-    return;
-  }
-
-  let created = 0;
-  let errors = 0;
-  const startTime = Date.now();
-
-  for (let i = 0; i < newProducts.length; i += ODOO_BATCH_SIZE) {
-    const batch = newProducts.slice(i, i + ODOO_BATCH_SIZE);
-    const batchNum = Math.floor(i / ODOO_BATCH_SIZE) + 1;
-    const totalBatches = Math.ceil(newProducts.length / ODOO_BATCH_SIZE);
-
-    process.stdout.write(`\rBatch ${batchNum}/${totalBatches} - Creating ${batch.length} products...`);
-
-    for (const product of batch) {
-      try {
-        const odooProduct = convertProductToOdoo(product, categoryMap);
-        await client.createProduct(odooProduct);
-        created++;
-      } catch (error) {
-        errors++;
-        console.error(`\nError creating product ${product.sku}:`, error);
-      }
-    }
-
-    const elapsed = (Date.now() - startTime) / 1000;
-    const rate = created / elapsed;
-    const remaining = (newProducts.length - created - errors) / rate;
-    process.stdout.write(` (${created} created, ${rate.toFixed(1)}/s, ~${remaining.toFixed(0)}s remaining)`);
-  }
-
-  console.log(`\n\nOdoo sync complete!`);
-  console.log(`  Created: ${created}`);
-  console.log(`  Errors: ${errors}`);
-  console.log(`  Time: ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
-}
-
-// ============================================
-// PULL FROM ODOO FUNCTIONS
-// ============================================
-
-interface ProductFromOdoo {
-  id: string;
-  sku: string;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  category: string;
-  attributes: ProductAttributes;
-  stock: number;
-  images: string[];
-}
-
-function convertFromOdoo(odooProduct: OdooProduct, categoryMap: Map<number, string>): ProductFromOdoo {
-  let categoryName = 'Unknown';
-  if (Array.isArray(odooProduct.categ_id)) {
-    categoryName = odooProduct.categ_id[1];
-  } else if (typeof odooProduct.categ_id === 'number') {
-    categoryName = categoryMap.get(odooProduct.categ_id) || 'Unknown';
-  }
-
-  let attributes: ProductAttributes = {};
-  if (odooProduct.description) {
-    const attrMatch = odooProduct.description.match(/--- Attributes ---\n([\s\S]*)/);
-    if (attrMatch) {
-      try {
-        attributes = JSON.parse(attrMatch[1]);
-      } catch {
-        // If parsing fails, leave attributes empty
-      }
-    }
-  }
-
-  // Use SKU (default_code) as the product ID for cleaner URLs
-  const sku = odooProduct.default_code || `ODOO-${odooProduct.id}`;
-
-  return {
-    id: sku,
-    sku: sku,
-    name: odooProduct.name,
-    description: odooProduct.description_sale || odooProduct.description || '',
-    price: odooProduct.list_price,
-    currency: 'USD',
-    category: categoryName,
+    id: sku || pimProduct.id,
+    sku: sku || pimProduct.id,
+    name,
+    description,
+    price,
+    currency,
+    category,
     attributes,
-    stock: odooProduct.qty_available || 0,
-    images: [`https://placehold.co/400x300/8B4513/F5DEB3?text=${encodeURIComponent(odooProduct.name.substring(0, 20))}`],
+    stock,
+    images,
   };
 }
 
-async function pullFromOdoo(client: OdooClient): Promise<ProductFromOdoo[]> {
-  console.log('\nPulling products from Odoo...');
+// ============================================
+// PULL FROM PIM FUNCTIONS
+// ============================================
 
-  // Get category mapping
-  const categories = await client.getCategories();
-  const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+async function pullCategoriesFromPim(): Promise<PimCategory[]> {
+  console.log('\nPulling categories from PIM API...');
 
-  // Get all active products
-  const odooProducts = await client.getProducts(
-    [['active', '=', true]],
-    { limit: 10000 }
-  );
+  const client = createPimClient();
+  const allCategories: PimCategory[] = [];
+  let page = 1;
+  const limit = 100;
+  let hasMore = true;
 
-  console.log(`Retrieved ${odooProducts.length} products from Odoo`);
+  while (hasMore) {
+    console.log(`  Fetching categories page ${page}...`);
+    const response = await client.getCategories({ page, limit });
 
-  return odooProducts.map(p => convertFromOdoo(p, categoryMap));
+    // Handle both flat and tree responses
+    const categories = response.data as PimCategory[];
+    allCategories.push(...categories);
+
+    console.log(`  Retrieved ${categories.length} categories (total: ${allCategories.length})`);
+
+    hasMore = response.pagination ? page < response.pagination.totalPages : false;
+    page++;
+  }
+
+  // Build category map for quick lookup
+  categoryMap = new Map(allCategories.map(c => [c.id, c]));
+
+  console.log(`Retrieved ${allCategories.length} categories from PIM`);
+
+  return allCategories;
+}
+
+async function pullFromPim(): Promise<ProductFromPim[]> {
+  console.log('\nPulling published products from PIM API...');
+
+  const client = createPimClient();
+  const allProducts: ProductFromPim[] = [];
+  let page = 1;
+  const limit = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    console.log(`  Fetching page ${page}...`);
+    const response = await client.getProducts({ page, limit, status: 'published' });
+
+    const products = response.data.map(convertFromPim);
+    allProducts.push(...products);
+
+    console.log(`  Retrieved ${products.length} products (total: ${allProducts.length})`);
+
+    hasMore = page < response.pagination.totalPages;
+    page++;
+  }
+
+  console.log(`Retrieved ${allProducts.length} products from PIM`);
+
+  return allProducts;
 }
 
 // ============================================
 // SOLR SYNC FUNCTIONS
 // ============================================
 
-function productToSolrDoc(product: ProductFromOdoo): SolrDocument {
+function productToSolrDoc(product: ProductFromPim): SolrDocument {
   return {
     id: product.id,
     sku: product.sku,
@@ -329,34 +297,34 @@ async function verifySolrIndex(): Promise<void> {
 async function main() {
   console.log('===========================================');
   console.log('  Unified Product Sync');
-  console.log('  products.json → Odoo → Solr');
+  console.log('  External PIM API → Solr');
   console.log('===========================================\n');
 
-  const client = createOdooClient();
-
   try {
-    // PHASE 1: Sync to Odoo
-    console.log('PHASE 1: Syncing products to Odoo');
+    // PHASE 1: Pull categories from PIM
+    console.log('PHASE 1: Pulling categories from PIM API');
     console.log('-------------------------------------------');
 
-    console.log('Connecting to Odoo...');
-    const uid = await client.authenticate();
-    console.log(`Authenticated as user ID: ${uid}`);
+    const categoriesFromPim = await pullCategoriesFromPim();
 
-    const categoryMap = await ensureCategories(client);
-    console.log('Category mapping:', categoryMap);
+    // Log category hierarchy
+    console.log('\nCategories:');
+    for (const category of categoriesFromPim) {
+      const indent = '  '.repeat(category.level);
+      console.log(`${indent}- ${category.name} (${category.code}) [${category.productCount} products]`);
+    }
 
-    await syncToOdoo(client, generatedProducts, categoryMap);
-
-    const odooCount = await client.getProductCount();
-    console.log(`Total products in Odoo: ${odooCount}`);
-
-    // PHASE 2: Pull from Odoo
+    // PHASE 2: Pull products from PIM
     console.log('\n-------------------------------------------');
-    console.log('PHASE 2: Pulling products from Odoo');
+    console.log('PHASE 2: Pulling products from PIM API');
     console.log('-------------------------------------------');
 
-    const productsFromOdoo = await pullFromOdoo(client);
+    const productsFromPim = await pullFromPim();
+
+    if (productsFromPim.length === 0) {
+      console.log('No products found in PIM. Exiting.');
+      process.exit(0);
+    }
 
     // PHASE 3: Sync to Solr
     console.log('\n-------------------------------------------');
@@ -369,7 +337,7 @@ async function main() {
       process.exit(1);
     }
 
-    const solrDocs = productsFromOdoo.map(productToSolrDoc);
+    const solrDocs = productsFromPim.map(productToSolrDoc);
 
     await clearSolrIndex();
     await indexToSolr(solrDocs);
@@ -379,7 +347,8 @@ async function main() {
     console.log('\n===========================================');
     console.log('  Sync Complete!');
     console.log('===========================================');
-    console.log(`  Products in Odoo: ${odooCount}`);
+    console.log(`  Categories from PIM: ${categoriesFromPim.length}`);
+    console.log(`  Products from PIM: ${productsFromPim.length}`);
     console.log(`  Products in Solr: ${solrDocs.length}`);
     console.log(`\nSolr Admin: http://localhost:8983/solr/#/products/query`);
 

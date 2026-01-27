@@ -1,0 +1,1235 @@
+openapi: 3.0.3
+info:
+  title: PIM API
+  version: 1.0.0
+  description: |
+    Product Information Management (PIM) API providing comprehensive product and category management.
+
+    ## Features
+    - Session-based and token-based authentication
+    - Full product lifecycle management (draft, review, approved, published)
+    - Hierarchical category structure with tree support
+    - Product attributes with locale and scope support
+    - API token management for programmatic access
+
+    ## Authentication
+    - **Session Cookie**: Use POST /api/auth/login to create a session
+    - **Bearer Token**: Use API tokens created via POST /api/profile/tokens (admin only)
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.example.com
+    description: Production server (configure as needed)
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Profile
+    description: User profile and API token management
+  - name: Products
+    description: Product management endpoints (requires authentication)
+  - name: Categories
+    description: Category management endpoints (requires authentication)
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate with email and password to create a session
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@example.com
+                password:
+                  type: string
+                  format: password
+                  example: admin123
+      responses:
+        '201':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+              example:
+                user:
+                  id: user_abc123
+                  email: admin@example.com
+                  name: Admin User
+                  role: admin
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/auth/session:
+    get:
+      tags:
+        - Authentication
+      summary: Get session status
+      description: Check if the user is authenticated and return user info
+      operationId: getSession
+      responses:
+        '200':
+          description: Session status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    allOf:
+                      - $ref: '#/components/schemas/User'
+                    nullable: true
+              example:
+                user:
+                  id: user_abc123
+                  email: admin@example.com
+                  name: Admin User
+                  role: admin
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout
+      description: Destroy the current session
+      operationId: logout
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/profile/tokens:
+    get:
+      tags:
+        - Profile
+      summary: List API tokens
+      description: Get all API tokens for the authenticated user
+      operationId: listTokens
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tokens retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiToken'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Profile
+      summary: Create API token
+      description: Create a new API token (admin only)
+      operationId: createToken
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Token name/description
+                  example: Production API Access
+                expiresInDays:
+                  type: integer
+                  description: Number of days until token expires (omit for no expiration)
+                  example: 90
+      responses:
+        '201':
+          description: Token created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The plain token (shown only once)
+                    example: pim_abc123def456ghi789jkl
+                  tokenData:
+                    $ref: '#/components/schemas/ApiToken'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/profile/tokens/{id}:
+    delete:
+      tags:
+        - Profile
+      summary: Revoke API token
+      description: Delete an API token
+      operationId: revokeToken
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Token ID
+      responses:
+        '200':
+          description: Token revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token revoked successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/products:
+    get:
+      tags:
+        - Products
+      summary: List products
+      description: Get paginated list of products with filters
+      operationId: listProducts
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, review, approved, published]
+            default: published
+          description: Filter by product status
+        - name: familyId
+          in: query
+          schema:
+            type: string
+          description: Filter by product family ID
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search term for product name or SKU
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductListItem'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+              example:
+                data:
+                  - id: prod_abc123
+                    familyId: family_electronics
+                    status: published
+                    completeness: 85.5
+                    createdAt: '2024-01-15T10:30:00Z'
+                    updatedAt: '2024-01-20T15:45:00Z'
+                    createdBy: user_abc123
+                    updatedBy: user_abc123
+                    identifiers:
+                      - id: ident_1
+                        type: sku
+                        value: PROD-12345
+                        isPrimary: true
+                      - id: ident_2
+                        type: gtin
+                        value: '1234567890123'
+                        isPrimary: false
+                    attributes:
+                      - id: attr_1
+                        key: name
+                        type: string
+                        value: Awesome Product
+                        locale: en-US
+                        scope: web
+                      - id: attr_2
+                        key: description
+                        type: string
+                        value: A great product
+                        locale: en-US
+                        scope: web
+                      - id: attr_3
+                        key: price
+                        type: number
+                        value: '99.99'
+                        locale: null
+                        scope: retail
+                  - id: prod_def456
+                    familyId: family_electronics
+                    status: published
+                    completeness: 92.0
+                    createdAt: '2024-01-16T11:00:00Z'
+                    updatedAt: '2024-01-21T09:30:00Z'
+                    createdBy: user_abc123
+                    updatedBy: user_def456
+                    identifiers:
+                      - id: ident_3
+                        type: sku
+                        value: PROD-67890
+                        isPrimary: true
+                    attributes:
+                      - id: attr_4
+                        key: name
+                        type: string
+                        value: Cool Gadget
+                        locale: en-US
+                        scope: web
+                      - id: attr_5
+                        key: price
+                        type: number
+                        value: '149.99'
+                        locale: null
+                        scope: retail
+                pagination:
+                  page: 1
+                  limit: 50
+                  total: 250
+                  totalPages: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Products
+      summary: Create product
+      description: Create a new product
+      operationId: createProduct
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - familyId
+              properties:
+                familyId:
+                  type: string
+                  example: family_electronics
+                status:
+                  type: string
+                  enum: [draft, review, approved, published]
+                  default: draft
+                identifiers:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - value
+                    properties:
+                      type:
+                        type: string
+                        example: sku
+                      value:
+                        type: string
+                        example: PROD-12345
+                      isPrimary:
+                        type: boolean
+                        default: false
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - key
+                      - type
+                    properties:
+                      key:
+                        type: string
+                        example: name
+                      type:
+                        type: string
+                        enum: [string, number, boolean, date, json]
+                        example: string
+                      value:
+                        type: string
+                        nullable: true
+                        example: Awesome Product
+                      locale:
+                        type: string
+                        nullable: true
+                        example: en-US
+                      scope:
+                        type: string
+                        nullable: true
+                        example: web
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product
+      description: Get a single product by ID
+      operationId: getProduct
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              example:
+                id: prod_abc123
+                familyId: family_electronics
+                status: published
+                completeness: 85.5
+                createdAt: '2024-01-15T10:30:00Z'
+                updatedAt: '2024-01-20T15:45:00Z'
+                createdBy: user_abc123
+                updatedBy: user_abc123
+                identifiers:
+                  - id: ident_1
+                    type: sku
+                    value: PROD-12345
+                    isPrimary: true
+                  - id: ident_2
+                    type: gtin
+                    value: '1234567890123'
+                    isPrimary: false
+                  - id: ident_3
+                    type: supplier_id
+                    value: SUP-999
+                    isPrimary: false
+                attributes:
+                  - id: attr_1
+                    key: name
+                    type: string
+                    value: Awesome Product
+                    locale: en-US
+                    scope: web
+                  - id: attr_2
+                    key: name
+                    type: string
+                    value: Fantastisk produkt
+                    locale: nb-NO
+                    scope: web
+                  - id: attr_3
+                    key: description
+                    type: string
+                    value: A detailed description of the awesome product
+                    locale: en-US
+                    scope: web
+                  - id: attr_4
+                    key: price
+                    type: number
+                    value: '99.99'
+                    locale: null
+                    scope: retail
+                  - id: attr_5
+                    key: weight
+                    type: number
+                    value: '1.5'
+                    locale: null
+                    scope: null
+                categories:
+                  - id: cat_assoc_1
+                    categoryId: cat_electronics
+                    isPrimary: true
+                  - id: cat_assoc_2
+                    categoryId: cat_gadgets
+                    isPrimary: false
+                classifications:
+                  - id: class_assoc_1
+                    codeId: code_consumer_electronics
+                    isPrimary: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: Full update of a product
+      operationId: updateProduct
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [draft, review, approved, published]
+                completeness:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                identifiers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ProductIdentifier'
+                attributes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ProductAttribute'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Products
+      summary: Patch product
+      description: Partial update of a product
+      operationId: patchProduct
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [draft, review, approved, published]
+                completeness:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+      responses:
+        '200':
+          description: Product patched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: Delete a product
+      operationId: deleteProduct
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/products/{id}/history:
+    get:
+      tags:
+        - Products
+      summary: Get product history
+      description: Get audit trail for a product
+      operationId: getProductHistory
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Number of items per page
+      responses:
+        '200':
+          description: Product history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        productId:
+                          type: string
+                        version:
+                          type: integer
+                        changeType:
+                          type: string
+                          enum: [created, updated, status_changed, deleted]
+                        changes:
+                          type: object
+                          description: JSON diff of changes
+                        userId:
+                          type: string
+                          nullable: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/categories:
+    get:
+      tags:
+        - Categories
+      summary: List categories
+      description: Get paginated list of categories with optional tree structure
+      operationId: listCategories
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: parentId
+          in: query
+          schema:
+            type: string
+          description: Filter by parent category ID (use 'null' for root categories)
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search term for category name or code
+        - name: tree
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Return hierarchical tree structure
+        - name: rootId
+          in: query
+          schema:
+            type: string
+          description: When tree=true, return tree starting from this root
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Category'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+                  - type: object
+                    description: Tree structure response (when tree=true)
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CategoryTree'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/categories/{id}:
+    get:
+      tags:
+        - Categories
+      summary: Get category
+      description: Get a single category by ID or slug
+      operationId: getCategory
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Category ID or slug
+      responses:
+        '200':
+          description: Category retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/categories/{id}/products:
+    get:
+      tags:
+        - Categories
+      summary: Get category products
+      description: Get all products in a category (including subcategories)
+      operationId: getCategoryProducts
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Category ID
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Category products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductListItem'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: pim_session
+      description: Session cookie authentication (acquired via POST /api/auth/login)
+
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: API token authentication (format pim_<base64url>)
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+      description: Page number for pagination
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 100
+      description: Number of items per page
+
+    ProductIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Product ID
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user_abc123
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        name:
+          type: string
+          example: Admin User
+        role:
+          type: string
+          enum: [admin, editor, user]
+          example: admin
+
+    ProductListItem:
+      type: object
+      description: Product list item with full identifiers and attributes
+      properties:
+        id:
+          type: string
+          example: prod_abc123
+        familyId:
+          type: string
+          example: family_electronics
+        status:
+          type: string
+          enum: [draft, review, approved, published]
+          example: published
+        completeness:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 85.5
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-01-20T15:45:00Z'
+        createdBy:
+          type: string
+          nullable: true
+          example: user_abc123
+        updatedBy:
+          type: string
+          nullable: true
+          example: user_abc123
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductIdentifier'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductAttribute'
+
+    Product:
+      type: object
+      description: Full product detail with all relations
+      properties:
+        id:
+          type: string
+          example: prod_abc123
+        familyId:
+          type: string
+          example: family_electronics
+        status:
+          type: string
+          enum: [draft, review, approved, published]
+          example: published
+        completeness:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 85.5
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-01-20T15:45:00Z'
+        createdBy:
+          type: string
+          nullable: true
+          example: user_abc123
+        updatedBy:
+          type: string
+          nullable: true
+          example: user_abc123
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductIdentifier'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductAttribute'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductCategoryAssociation'
+        classifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductClassificationAssociation'
+
+    ProductIdentifier:
+      type: object
+      properties:
+        id:
+          type: string
+          example: ident_xyz789
+        type:
+          type: string
+          example: sku
+        value:
+          type: string
+          example: PROD-12345
+        isPrimary:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductAttribute:
+      type: object
+      description: Product attribute without database-specific timestamps
+      properties:
+        id:
+          type: string
+          example: attr_xyz789
+        key:
+          type: string
+          example: name
+        type:
+          type: string
+          description: Attribute type (e.g., string, number, boolean, date, json)
+          example: string
+        value:
+          type: string
+          nullable: true
+          example: Awesome Product
+        locale:
+          type: string
+          nullable: true
+          example: en-US
+        scope:
+          type: string
+          nullable: true
+          example: web
+
+    ProductCategoryAssociation:
+      type: object
+      description: Association between product and category
+      properties:
+        id:
+          type: string
+          example: assoc_xyz789
+        categoryId:
+          type: string
+          example: cat_abc123
+        isPrimary:
+          type: boolean
+          example: true
+
+    ProductClassificationAssociation:
+      type: object
+      description: Association between product and classification code
+      properties:
+        id:
+          type: string
+          example: class_xyz789
+        codeId:
+          type: string
+          example: code_abc123
+        isPrimary:
+          type: boolean
+          example: true
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          example: cat_abc123
+        code:
+          type: string
+          example: electronics
+        name:
+          type: string
+          example: Electronics
+        slug:
+          type: string
+          example: electronics
+        description:
+          type: string
+          nullable: true
+          example: Electronic devices and accessories
+        parentId:
+          type: string
+          nullable: true
+          example: cat_parent123
+        level:
+          type: integer
+          example: 1
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        subcategoryCount:
+          type: integer
+          example: 5
+        productCount:
+          type: integer
+          example: 42
+
+    CategoryTree:
+      allOf:
+        - $ref: '#/components/schemas/Category'
+        - type: object
+          properties:
+            children:
+              type: array
+              items:
+                $ref: '#/components/schemas/CategoryTree'
+
+    ApiToken:
+      type: object
+      properties:
+        id:
+          type: string
+          example: token_abc123
+        userId:
+          type: string
+          example: user_abc123
+        name:
+          type: string
+          example: Production API Access
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2024-01-20T10:30:00Z'
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2024-04-20T10:30:00Z'
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 50
+        total:
+          type: integer
+          example: 250
+        totalPages:
+          type: integer
+          example: 5
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Error message
+        message:
+          type: string
+          example: Additional error details
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Missing required field
+            message: The 'name' field is required
+
+    Unauthorized:
+      description: Unauthorized - authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Forbidden
+            message: Only admins can perform this action
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Not found
+            message: Product not found
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Internal server error
+            message: An unexpected error occurred
